@@ -201,7 +201,7 @@ class StaffScheduleApp {
         }
 
         const summaryDiv = document.getElementById('availabilitySummary');
-        summaryDiv.innerHTML = \`Day Shifts Available: \${totalDayShifts} | Night Shifts Available: \${totalNightShifts} | Weekend Shifts Available: \${totalWeekendShifts} | Adjusted Total Availability: \${adjustedAvailabilityCount}\`;
+        summaryDiv.innerHTML = `Day Shifts Available: ${totalDayShifts} | Night Shifts Available: ${totalNightShifts} | Weekend Shifts Available: ${totalWeekendShifts} | Adjusted Total Availability: ${adjustedAvailabilityCount}`;
     }
 }
 
