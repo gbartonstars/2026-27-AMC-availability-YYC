@@ -1,0 +1,136 @@
+/* General app colors */
+:root {
+    --color-header-bg: #2c3e50;
+    --color-header-text: #ecf0f1;
+    --color-table-border: #bdc3c7;
+    --color-weekend-bg: #f9f9f9;
+}
+
+/* Reset and base */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #fff;
+    color: #333;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+/* Header */
+.app-header {
+    text-align: center;
+    color: var(--color-header-text);
+    background-color: var(--color-header-bg);
+    padding: 20px 0;
+    margin-bottom: 15px;
+}
+
+.subtitle {
+    font-size: 1.1rem;
+    margin-top: -10px;
+    font-weight: normal;
+}
+
+/* Staff selection */
+.staff-selection {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    font-weight: bold;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.form-control {
+    padding: 6px 12px;
+    font-size: 1rem;
+    border: 1px solid var(--color-table-border);
+    border-radius: 4px;
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Calendar */
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.calendar .day-name,
+.calendar .day-cell {
+    padding: 8px;
+    border: 1px solid var(--color-table-border);
+    text-align: center;
+    background-color: #fafafa;
+}
+
+.day-name {
+    font-weight: bold;
+    background-color: var(--color-header-bg);
+    color: var(--color-header-text);
+}
+
+.day-cell {
+    background-color: white;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.date-label {
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.availability-dropdown {
+    margin: 4px 0;
+}
+
+/* Weekend highlight */
+.weekend {
+    background-color: var(--color-weekend-bg);
+}
+
+/* Month navigation */
+.month-navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.month-navigation button {
+    padding: 8px 16px;
+    background-color: var(--color-header-bg);
+    color: var(--color-header-text);
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+/* Day shift dropdown yellow background */
+.availability-dropdown[data-shift-type="Day"] {
+    background-color: #fff59d; /* light yellow */
+    color: #000;
+}
+
+/* Night shift dropdown blue background */
+.availability-dropdown[data-shift-type="Night"] {
+    background-color: #90caf9; /* light blue */
+    color: #000;
+}
+
+/* Availability summary styling */
+.summary {
+    margin-top: 15px;
+    font-weight: bold;
+    text-align: center;
+}
