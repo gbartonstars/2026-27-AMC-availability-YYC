@@ -1,0 +1,191 @@
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: Arial, sans-serif;
+  overflow-x: hidden;
+  /* Full-screen helicopter image as background */
+  background: url('IMG_1342.jpeg') no-repeat center center fixed;
+  background-size: cover;
+  color: #222;
+  position: relative;
+  z-index: 0;
+}
+
+body::before {
+  content: "";
+  background-color: rgba(0,0,0,0.40);
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: -1;
+}
+
+/* The container is now transparent to show the background */
+.container {
+  position: relative;
+  z-index: 1;
+  width: 98vw;
+  max-width: 1800px;
+  margin: 30px auto;
+  padding: 24px 32px;
+  background: rgba(255,255,255,0.65); /* semi-transparent white */
+  border-radius: 18px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.15);
+}
+
+/* Headings and Labels */
+h1 {
+  margin-bottom: 12px;
+  color: #123564;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 5px #fff, 0 0 2px #fff;
+}
+
+p {
+  margin: 0 0 18px 0;
+  color: #273450;
+}
+
+/* Dropdown selectors */
+label, select {
+  font-size: 1.2em;
+}
+
+.staff-selection {
+  margin-bottom: 18px;
+}
+
+#scheduleSection {
+  max-width: 1800px;
+  margin: 26px auto;
+  text-align: center;
+}
+
+.month-navigation {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin: 16px 0 20px;
+}
+
+.month-navigation button,
+button {
+  cursor: pointer;
+  padding: 13px 32px;
+  border: none;
+  border-radius: 8px;
+  background-color: #006699;
+  color: white;
+  font-size: 1.24em;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.month-navigation button:hover,
+button:hover {
+  background-color: #003c58;
+}
+
+/* Responsive full-width calendar grid */
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(160px,1fr));
+  column-gap: 22px;
+  row-gap: 22px;
+  width: 100vw;
+  max-width: 1750px;
+  margin: 0 auto;
+  text-align: center;
+  background: rgba(255,255,255,0.48);
+  border-radius: 12px;
+  padding: 22px 0 22px 0;
+  box-shadow: 0 4px 36px rgba(0,0,0,0.10);
+}
+
+/* Day names header */
+.calendar .day-name {
+  font-weight: 700;
+  background-color: rgba(240, 240, 240, 0.89);
+  border: 1.5px solid #888;
+  padding: 17px 0;
+  font-size: 1.35em;
+  letter-spacing: 2px;
+  color: #155;
+  border-radius: 7px;
+}
+
+/* Calendar day cells */
+.calendar .day-cell {
+  background-color: rgba(255,255,255,0.89);
+  border: 1.5px solid #aaa;
+  min-height: 135px;
+  padding: 18px 12px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 1.18em;
+  border-radius: 9px;
+  box-sizing: border-box;
+  box-shadow: 1px 1px 8px rgba(0,0,0,0.1);
+  word-wrap: break-word;
+  overflow: auto;
+}
+
+.calendar .weekend {
+  background-color: rgba(235,246,253,0.85);
+}
+
+.date-label {
+  font-weight: 700;
+  font-size: 1.4em;
+  margin-bottom: 14px;
+  color: #123564;
+  user-select: none;
+  text-shadow: 0 1px 4px #fff, 0 0 2px #fff;
+}
+
+.availability-dropdown.day-shift {
+  background-color: #fffde7;
+  color: #7a6d00;
+  border: 1px solid #ffe082;
+}
+
+.availability-dropdown.night-shift {
+  background-color: #e3f2fd;
+  color: #1967a5;
+  border: 1px solid #90caf9;
+}
+
+.availability-dropdown {
+  width: 96%;
+  margin-top: 9px;
+  font-size: 1.08em;
+  padding: 8px 5px;
+  border-radius: 6px;
+  box-sizing: border-box;
+  transition: box-shadow 0.3s;
+}
+
+.availability-dropdown:hover,
+.availability-dropdown:focus {
+  box-shadow: 0 0 5px 2px rgba(0, 102, 153, 0.18);
+  outline: none;
+}
+
+/* Responsive: Adjusts column size on smaller screens */
+@media (max-width: 1200px) {
+  .calendar {
+    grid-template-columns: repeat(7, minmax(110px,1fr));
+  }
+  .container,
+  #scheduleSection { max-width: 99vw; }
+}
+
+@media (max-width: 900px) {
+  .calendar {
+    grid-template-columns: repeat(7, minmax(80px,1fr));
+    font-size: 0.93em;
+  }
+}
