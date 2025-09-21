@@ -1,0 +1,126 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: url('IMG_1342.jpeg') no-repeat center center fixed;
+  background-size: cover;
+  color: #222;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  background-color: rgba(0,0,0,0.32);
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: -1;
+}
+
+/* True full-width container, no max-width */
+.container {
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0; padding: 24px 0 32px 0;
+  background: rgba(255,255,255,0.66);
+  box-sizing: border-box;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Headings */
+h1 {
+  color: #123564;
+  text-shadow: 0 0 6px #fff, 0 0 1px #fff;
+  margin-bottom: 12px;
+}
+p { color: #27435c; }
+
+label, select { font-size: 1.25em; }
+
+.staff-selection { margin: 0 auto 14px auto; text-align: center; }
+
+#scheduleSection {
+  margin: 22px auto;
+  text-align: center;
+}
+
+/* Calendar styling */
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(170px,1fr));
+  gap: 20px 18px;
+  width: 98vw;
+  background: rgba(255,255,255,0.50);
+  border-radius: 15px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+/* Day-of-week header row */
+.calendar .day-name {
+  font-weight: bold;
+  background-color: rgba(240,240,240,0.89);
+  border: 1.5px solid #888;
+  padding: 17px 0;
+  font-size: 1.3em;
+  color: #27435c;
+  border-radius: 6px;
+}
+
+/* Regular day cells */
+.calendar .day-cell {
+  background: rgba(255,255,255,0.85);
+  border: 1.2px solid #888;
+  padding: 16px 8px 12px 8px;
+  min-height: 140px;
+  border-radius: 7px;
+  font-size: 1.08em;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.calendar .weekend {
+  background: rgba(210,230,255,0.84);
+}
+
+.date-label {
+  font-weight: 700;
+  font-size: 1.35em;
+  margin-bottom: 10px;
+  color: #123564;
+  text-shadow: 0 1px 4px #fff, 0 0 2px #fff;
+}
+
+/*.availability-dropdown styling (day/night shift colors) */
+.availability-dropdown.day-shift {
+  background-color: #fffde7;
+  color: #7a6d00;
+  border: 1px solid #ffe082;
+}
+.availability-dropdown.night-shift {
+  background-color: #e3f2fd;
+  color: #1967a5;
+  border: 1px solid #90caf9;
+}
+.availability-dropdown {
+  width: 94%;
+  margin-top: 9px;
+  font-size: 1.05em;
+  padding: 8px 5px;
+  border-radius: 5px;
+  box-sizing: border-box;
+  margin-bottom: 4px;
+}
+.availability-dropdown:focus { outline: 2px solid #006699; }
+
+@media (max-width: 1200px) {
+  .calendar { grid-template-columns: repeat(7, minmax(95px,1fr)); }
+}
+@media (max-width:900px) {
+  .calendar { grid-template-columns: repeat(7, minmax(63px,1fr)); font-size: 0.9em; }
+  .container, #scheduleSection { width: 100vw; }
+}
