@@ -1,0 +1,148 @@
+/* Base styles */
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: #fff;
+  overflow-x: hidden;
+}
+
+/* Container uses nearly full viewport width with padding */
+.container {
+  max-width: 98vw;
+  margin: 24px auto;
+  padding: 0 10px;
+}
+
+/* Image styling */
+img {
+  max-width: 400px;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.13);
+  margin-bottom: 24px;
+}
+
+/* Headers */
+h1 {
+  margin-bottom: 8px;
+}
+
+p {
+  margin-top: 0;
+  color: #555;
+}
+
+/* Staff selection */
+label, select {
+  font-size: 1.2em;
+  margin-top: 12px;
+}
+
+/* Schedule section fills most width */
+#scheduleSection {
+  width: 98vw;
+  max-width: 1200px;
+  margin: 20px auto;
+  text-align: center;
+}
+
+/* Month navigation */
+.month-navigation {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-top: 12px;
+}
+
+.month-navigation button,
+button {
+  cursor: pointer;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  background-color: #006699;
+  color: white;
+  font-size: 1.15em;
+}
+
+/* Calendar grid: full width, consistent columns */
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  column-gap: 16px;
+  row-gap: 16px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Day names styling */
+.calendar .day-name {
+  font-weight: bold;
+  background-color: #e0e0e0;
+  border: 1.5px solid #bbb;
+  padding: 16px 0 10px 0;
+  font-size: 1.3em;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+/* Day cells styling: larger and more padding */
+.calendar .day-cell {
+  background-color: white;
+  border: 1.5px solid #bbb;
+  min-height: 140px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 15px 8px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  font-size: 1.2em;
+  border-radius: 10px;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Weekend background */
+.calendar .weekend {
+  background-color: #f2f4f8;
+}
+
+/* Date label larger and spaced */
+.date-label {
+  font-weight: bold;
+  font-size: 1.4em;
+  margin-bottom: 14px;
+  color: #123564;
+  user-select: none;
+}
+
+/* Dropdown inputs larger with padding */
+.availability-dropdown {
+  width: 90%;
+  margin-top: 8px;
+  font-size: 1.15em;
+  padding: 8px 6px;
+  border-radius: 6px;
+  border: 1.2px solid #aaa;
+  background: #f7f7fa;
+}
+
+/* Responsive tweaks: smaller screens */
+@media (max-width: 768px) {
+  .calendar .day-cell {
+    min-height: 110px;
+    font-size: 1em;
+    padding: 10px 5px;
+  }
+
+  .availability-dropdown {
+    font-size: 1em;
+    padding: 6px 4px;
+  }
+}
