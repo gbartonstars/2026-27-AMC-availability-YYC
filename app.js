@@ -160,7 +160,7 @@ class StaffScheduleApp {
     const ctx=document.getElementById("availabilityChart").getContext("2d");
     this.charts.availabilityChart=new Chart(ctx,{
       type:"bar",
-      {
+    
         labels,
         datasets:[
           {label:"Day Availability", dayCounts, backgroundColor:"#ffdd57"},
