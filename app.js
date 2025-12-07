@@ -121,24 +121,23 @@ class StaffScheduleApp {
     firebase.database().ref("scheduleData").set(payload);
   }
 
-  // Load everything from Firebase once at startup
+  // Live listener: keep data in sync across all devices
   loadAllData() {
     const ref = firebase.database().ref("scheduleData");
-    ref.once("value")
-      .then(snapshot => {
-        const data = snapshot.val();
-        if (!data) return;
-        this.allAvailability = data.allAvailability || {};
-        this.idealAvailability = data.idealAvailability || {};
-        // After data is loaded, if someone is already selected, re-render
-        if (this.currentStaff || this.isOverviewMode) {
-          this.renderCalendar();
-          this.updateAvailabilitySummary();
-        }
-      })
-      .catch(err => {
-        console.error("Error loading data from Firebase", err);
-      });
+
+    ref.on("value", snapshot => {
+      const data = snapshot.val() || {};
+      this.allAvailability = data.allAvailability || {};
+      this.idealAvailability = data.idealAvailability || {};
+
+      // If someone is logged in or overview is on, re-render with latest data
+      if (this.currentStaff || this.isOverviewMode) {
+        this.renderCalendar();
+        this.updateAvailabilitySummary();
+      }
+    }, error => {
+      console.error("Error listening to Firebase data", error);
+    });
   }
 
   bindEvents() {
