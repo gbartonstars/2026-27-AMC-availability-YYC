@@ -6,12 +6,11 @@
   <title>Staff Schedule Viewer</title>
   <link rel="stylesheet" href="style.css" />
 
-  <!-- Firebase SDKs (compat builds for simple script usage) -->
+  <!-- Firebase SDKs + config (ADD THIS BLOCK) -->
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
 
   <script>
-    // Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyB3EuJcuoyCAc43Xvuv8G7M4o8_BgLeeTQ",
       authDomain: "star1-schedule.firebaseapp.com",
@@ -21,8 +20,6 @@
       messagingSenderId: "892421370116",
       appId: "1:892421370116:web:30b705b567fc02b82fe051"
     };
-
-    // Initialize Firebase (global so app.js can use firebase.database())
     firebase.initializeApp(firebaseConfig);
   </script>
 </head>
