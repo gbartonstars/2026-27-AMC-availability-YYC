@@ -896,6 +896,77 @@ class StaffScheduleApp {
     return { rnDay, rnNight, paraDay, paraNight };
   }
 
+    // NEW: render the auto-generated roster calendar (read-only)
+  renderRosterCalendar() {
+    const calendarEl = document.getElementById('rosterCalendar');
+    calendarEl.innerHTML = '';
+
+    this.daysOfWeek.forEach(day => {
+      const dayNameEl = document.createElement('div');
+      dayNameEl.classList.add('day-name');
+      dayNameEl.textContent = day;
+      calendarEl.appendChild(dayNameEl);
+    });
+
+    const year  = this.rosterDate.getFullYear();
+    const month = this.rosterDate.getMonth();
+    const firstDayOfWeek = new Date(year, month, 1).getDay();
+    const daysInMonth    = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      const blankCell = document.createElement('div');
+      blankCell.classList.add('day-cell');
+      calendarEl.appendChild(blankCell);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateObj = new Date(year, month, day);
+      const dateStr = dateObj.toISOString().split('T')[0];
+
+      const dayCell = document.createElement('div');
+      dayCell.classList.add('day-cell');
+      if (dateObj.getDay() === 0 || dateObj.getDay() === 6) {
+        dayCell.classList.add('weekend');
+      }
+
+      const dateLabel = document.createElement('div');
+      dateLabel.classList.add('date-label');
+      dateLabel.textContent = day;
+      dayCell.appendChild(dateLabel);
+
+      const entry = (this.generatedRoster && this.generatedRoster[dateStr]) || {};
+
+      const pd = document.createElement('div');
+      pd.textContent = `Para Day: ${entry.paraDay || '-'}`;
+      const nd = document.createElement('div');
+      nd.textContent = `Nurse Day: ${entry.nurseDay || '-'}`;
+      const pn = document.createElement('div');
+      pn.textContent = `Para Night: ${entry.paraNight || '-'}`;
+      const nn = document.createElement('div');
+      nn.textContent = `Nurse Night: ${entry.nurseNight || '-'}`;
+
+      dayCell.appendChild(pd);
+      dayCell.appendChild(nd);
+      dayCell.appendChild(pn);
+      dayCell.appendChild(nn);
+
+      calendarEl.appendChild(dayCell);
+    }
+  }
+
+  // NEW: placeholder for the actual generator (Phase 2)
+  onGenerateRoster() {
+    if (!this.currentStaff || this.currentStaff !== "Greg Barton") {
+      alert("Only Greg can generate the roster.");
+      return;
+    }
+
+    alert("Roster generation logic will be added in the next phase.");
+    // In Phase 2, this will:
+    // 1) Build assignments using availability, ideals, and rules.
+    // 2) Write to firebase.database().ref('generatedRoster').set(...) .
+  }
+    
   updateAvailabilitySummary() {
     if (this.isOverviewMode) {
       const summary = document.getElementById('availabilitySummary');
