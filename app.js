@@ -185,11 +185,62 @@ class StaffScheduleApp {
       idealNext.addEventListener('click', () => this.changeIdealMonth(1));
     }
 
+    bindEvents() {
+    document.getElementById('staffSelect')
+      .addEventListener('change', e => this.onStaffChange(e));
+
+    document.getElementById('viewStaffSelect')
+      .addEventListener('change', e => this.onViewStaffChange(e));
+
+    document.getElementById('prevMonth')
+      .addEventListener('click', () => this.changeMonth(-1));
+
+    document.getElementById('nextMonth')
+      .addEventListener('click', () => this.changeMonth(1));
+
+    const overviewToggle = document.getElementById('overviewToggle');
+    if (overviewToggle) {
+      overviewToggle.addEventListener('change', e => {
+        this.isOverviewMode = e.target.checked;
+        this.showSchedule();
+      });
+    }
+
+    const idealTab = document.getElementById('idealScheduleTab');
+    if (idealTab) {
+      idealTab.addEventListener('click', () => this.showIdealSchedule());
+    }
+
+    const idealPrev = document.getElementById('idealPrevMonth');
+    const idealNext = document.getElementById('idealNextMonth');
+    if (idealPrev && idealNext) {
+      idealPrev.addEventListener('click', () => this.changeIdealMonth(-1));
+      idealNext.addEventListener('click', () => this.changeIdealMonth(1));
+    }
+
     const backBtn = document.getElementById('backToMainSchedule');
     if (backBtn) {
       backBtn.addEventListener('click', () => this.showSchedule());
     }
+
+    // NEW: auto roster buttons and navigation
+    const openRosterBtn = document.getElementById('openRosterView');
+    const generateRosterBtn = document.getElementById('generateRosterButton');
+    const rosterPrev = document.getElementById('rosterPrevMonth');
+    const rosterNext = document.getElementById('rosterNextMonth');
+
+    if (openRosterBtn) {
+      openRosterBtn.addEventListener('click', () => this.showAutoRoster());
+    }
+    if (generateRosterBtn) {
+      generateRosterBtn.addEventListener('click', () => this.onGenerateRoster());
+    }
+    if (rosterPrev && rosterNext) {
+      rosterPrev.addEventListener('click', () => this.changeRosterMonth(-1));
+      rosterNext.addEventListener('click', () => this.changeRosterMonth(1));
+    }
   }
+    
 
   async onStaffChange(e) {
     const enteredName = e.target.value;
