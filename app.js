@@ -105,7 +105,9 @@ class StaffScheduleApp {
 
     this.allAvailability = {};
     this.idealAvailability = {};
+    this.generatedRoster = {};   // new: auto-generated roster from Firebase
     this.idealDate = new Date(this.dateRangeStart.getTime());
+    this.rosterDate = new Date(this.dateRangeStart.getTime()); // new: roster view month
 
     this.bindEvents();
     this.loadAllData();
