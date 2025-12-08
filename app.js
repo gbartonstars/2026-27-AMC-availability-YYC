@@ -123,22 +123,32 @@ class StaffScheduleApp {
     firebase.database().ref("scheduleData").set(payload);
   }
 
-  // Live listener: keep data in sync across all devices
+  // Live listeners: keep data in sync across all devices
   loadAllData() {
-    const ref = firebase.database().ref("scheduleData");
-
-    ref.on("value", snapshot => {
+    const scheduleRef = firebase.database().ref("scheduleData");
+    scheduleRef.on("value", snapshot => {
       const data = snapshot.val() || {};
       this.allAvailability = data.allAvailability || {};
       this.idealAvailability = data.idealAvailability || {};
 
-      // If someone is logged in or overview is on, re-render with latest data
       if (this.currentStaff || this.isOverviewMode) {
         this.renderCalendar();
         this.updateAvailabilitySummary();
       }
     }, error => {
-      console.error("Error listening to Firebase data", error);
+      console.error("Error listening to Firebase scheduleData", error);
+    });
+
+    // Listen for auto-generated roster updates
+    const rosterRef = firebase.database().ref("generatedRoster");
+    rosterRef.on("value", snapshot => {
+      this.generatedRoster = snapshot.val() || {};
+      if (document.getElementById("autoRosterSection").style.display === "block") {
+        this.renderRosterCalendar();
+        this.updateRosterMonthLabel();
+      }
+    }, error => {
+      console.error("Error listening to Firebase generatedRoster", error);
     });
   }
 
