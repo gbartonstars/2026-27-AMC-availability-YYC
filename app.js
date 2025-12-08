@@ -426,6 +426,55 @@ class StaffScheduleApp {
       `${monthName} ${year}`;
   }
 
+   // NEW: auto roster view controls
+  showAutoRoster() {
+    // Only allow privileged users to open
+    if (!this.currentStaff || !this.privilegedUsers.has(this.currentStaff)) return;
+
+    document.getElementById('scheduleSection').style.display = 'none';
+    document.getElementById('idealScheduleSection').style.display = 'none';
+    document.getElementById('autoRosterSection').style.display = 'block';
+
+    this.renderRosterCalendar();
+    this.updateRosterMonthLabel();
+  }
+
+  changeRosterMonth(direction) {
+    let newMonth = this.rosterDate.getMonth() + direction;
+    let newYear  = this.rosterDate.getFullYear();
+    let newDate  = new Date(newYear, newMonth, 1);
+
+    if (newDate < this.dateRangeStart) {
+      newDate = new Date(
+        this.dateRangeStart.getFullYear(),
+        this.dateRangeStart.getMonth(),
+        1
+      );
+    }
+    if (newDate > this.dateRangeEnd) {
+      newDate = new Date(
+        this.dateRangeEnd.getFullYear(),
+        this.dateRangeEnd.getMonth(),
+        1
+      );
+    }
+
+    this.rosterDate = newDate;
+    this.renderRosterCalendar();
+    this.updateRosterMonthLabel();
+  }
+
+  updateRosterMonthLabel() {
+    const monthName = this.monthNames[this.rosterDate.getMonth()];
+    const year      = this.rosterDate.getFullYear();
+    document.getElementById('rosterCurrentMonth').textContent =
+      `${monthName} ${year}`;
+  }
+
+  renderCalendar() {
+    const calendarEl = document.getElementById('calendar');
+    // existing code continues...
+    
   renderCalendar() {
     const calendarEl = document.getElementById('calendar');
     calendarEl.innerHTML = '';
