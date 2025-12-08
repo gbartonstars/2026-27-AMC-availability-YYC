@@ -223,6 +223,34 @@ class StaffScheduleApp {
       document.getElementById('viewAllSection').style.display = 'none';
     }
 
+    // Live listeners: keep data in sync across all devices
+  loadAllData() {
+    const scheduleRef = firebase.database().ref("scheduleData");
+    scheduleRef.on("value", snapshot => {
+      const data = snapshot.val() || {};
+      this.allAvailability = data.allAvailability || {};
+      this.idealAvailability = data.idealAvailability || {};
+
+      if (this.currentStaff || this.isOverviewMode) {
+        this.renderCalendar();
+        this.updateAvailabilitySummary();
+      }
+    }, error => {
+      console.error("Error listening to Firebase scheduleData", error);
+    });
+
+    // Listen for auto-generated roster updates
+    const rosterRef = firebase.database().ref("generatedRoster");
+    rosterRef.on("value", snapshot => {
+      this.generatedRoster = snapshot.val() || {};
+      if (document.getElementById("autoRosterSection").style.display === "block") {
+        this.renderRosterCalendar();
+        this.updateRosterMonthLabel();
+      }
+    }, error => {
+      console.error("Error listening to Firebase generatedRoster", error);
+    });
+  }
     if (this.idealUsers.has(enteredName)) {
       document.getElementById('idealTabSection').style.display = 'block';
     } else {
