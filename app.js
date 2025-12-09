@@ -970,6 +970,53 @@ class StaffScheduleApp {
     return { rnDay, rnNight, paraDay, paraNight };
   }
 
+  // Helper: compute per-staff adjusted caps for the current month
+  getMonthlyCapsForCurrentMonth() {
+    const year  = this.rosterDate.getFullYear();
+    const month = this.rosterDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const startDate = new Date(year, month, 1);
+    const endDate   = new Date(year, month, daysInMonth);
+
+    const caps = {};   // name -> { base, vacations, cap, used }
+
+    Object.keys(this.allAvailability || {}).forEach(name => {
+      // base requirement: from 30/31 tables for that month
+      let base = 0;
+      if (daysInMonth === 30) {
+        base = this.minimumRequired30[name] || 0;
+      } else if (daysInMonth === 31) {
+        base = this.minimumRequired31[name] || 0;
+      } else {
+        base = 0;
+      }
+
+      let vacations = 0;
+      const days = this.allAvailability[name] || {};
+      for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(year, month, day);
+        const dateStr = d.toISOString().split('T')[0];
+        const entry = days[dateStr];
+        if (entry && entry.Day === 'V') {
+          vacations += 1;   // Day-Vacation only
+        }
+      }
+
+      let cap = base - vacations;
+      if (cap < 0) cap = 0;
+
+      caps[name] = {
+        base,
+        vacations,
+        cap,
+        used: 0
+      };
+    });
+
+    return caps;
+  }
+  
   // Render the auto-generated roster calendar (read-only)
   renderRosterCalendar() {
     const calendarEl = document.getElementById('rosterCalendar');
