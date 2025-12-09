@@ -678,6 +678,17 @@ class StaffScheduleApp {
       const activeStaff = this.currentStaff;
       if (!activeStaff) return;
 
+      // NEW: block changes in locked months
+      if (this.isDateLocked(dateStr)) {
+        alert('This part of the schedule has been locked by Greg. Availability changes are not allowed here.');
+        // Revert dropdown to previously saved value
+        const stored = this.allAvailability[activeStaff] &&
+                       this.allAvailability[activeStaff][dateStr];
+        const prevVal = stored ? stored[shiftType] || '' : '';
+        select.value = prevVal;
+        return;
+      }
+
       if (!this.allAvailability[activeStaff]) this.allAvailability[activeStaff] = {};
       if (!this.allAvailability[activeStaff][dateStr]) {
         this.allAvailability[activeStaff][dateStr] = {
