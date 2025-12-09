@@ -153,6 +153,11 @@ class StaffScheduleApp {
     }, error => {
       console.error("Error listening to Firebase locks", error);
     });
+
+    // Load generated roster persistence
+    firebase.database().ref("generatedRoster").on("value", snapshot => {
+      this.generatedRoster = snapshot.val() || {};
+    });
   }
 
   bindEvents() {
