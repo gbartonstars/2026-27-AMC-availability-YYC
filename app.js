@@ -404,6 +404,27 @@ class StaffScheduleApp {
     el.textContent = `First 6 months: ${first} | Last 6 months: ${last}`;
   }
 
+  // NEW: check if a given date is in a locked half of the schedule
+  isDateLocked(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return false;
+
+    // Midpoint = start date + 6 calendar months
+    const mid = new Date(
+      this.dateRangeStart.getFullYear(),
+      this.dateRangeStart.getMonth() + 6,
+      1
+    );
+
+    if (d >= this.dateRangeStart && d < mid) {
+      return this.lockFirstSix;
+    }
+    if (d >= mid && d <= this.dateRangeEnd) {
+      return this.lockLastSix;
+    }
+    return false;
+  }
+
   updateIdealMonthLabel() {
     const monthName = this.monthNames[this.idealDate.getMonth()];
     const year      = this.idealDate.getFullYear();
