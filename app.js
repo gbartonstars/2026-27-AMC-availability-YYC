@@ -192,6 +192,47 @@ class StaffScheduleApp {
     if (backBtn) {
       backBtn.addEventListener('click', () => this.showSchedule());
     }
+
+    // NEW: schedule lock buttons (Greg only)
+    const lockFirstSixBtn = document.getElementById('lockFirstSixBtn');
+    const unlockFirstSixBtn = document.getElementById('unlockFirstSixBtn');
+    const lockLastSixBtn = document.getElementById('lockLastSixBtn');
+    const unlockLastSixBtn = document.getElementById('unlockLastSixBtn');
+
+    const locksRef = firebase.database().ref("locks");
+
+    const ensureGreg = () => {
+      if (!this.currentStaff || this.currentStaff !== "Greg Barton") {
+        alert("Only Greg can change schedule locks.");
+        return false;
+      }
+      return true;
+    };
+
+    if (lockFirstSixBtn) {
+      lockFirstSixBtn.addEventListener('click', () => {
+        if (!ensureGreg()) return;
+        locksRef.update({ firstSixMonths: true });
+      });
+    }
+    if (unlockFirstSixBtn) {
+      unlockFirstSixBtn.addEventListener('click', () => {
+        if (!ensureGreg()) return;
+        locksRef.update({ firstSixMonths: false });
+      });
+    }
+    if (lockLastSixBtn) {
+      lockLastSixBtn.addEventListener('click', () => {
+        if (!ensureGreg()) return;
+        locksRef.update({ lastSixMonths: true });
+      });
+    }
+    if (unlockLastSixBtn) {
+      unlockLastSixBtn.addEventListener('click', () => {
+        if (!ensureGreg()) return;
+        locksRef.update({ lastSixMonths: false });
+      });
+    }
   }
 
   async onStaffChange(e) {
