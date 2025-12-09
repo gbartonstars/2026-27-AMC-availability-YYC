@@ -1075,15 +1075,67 @@ class StaffScheduleApp {
     }
   }
 
-  // Placeholder for the actual generator (Phase 2)
+  // Generate roster for the current roster month (best-effort greedy)
   onGenerateRoster() {
     if (!this.currentStaff || this.currentStaff !== "Greg Barton") {
       alert("Only Greg can generate the roster.");
       return;
     }
 
-    alert("Roster generation logic will be added in the next phase.");
-  }
+    const year  = this.rosterDate.getFullYear();
+    const month = this.rosterDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const caps = this.getMonthlyCapsForCurrentMonth();  // name -> { cap, used, vacations }
+    const newRoster = { ...(this.generatedRoster || {}) };
+
+    // Helper to get availability/ideal for a person/date/shift
+    const getAvailEntry = (name, dateStr) =>
+      (this.allAvailability[name] && this.allAvailability[name][dateStr]) || null;
+    const getIdealEntry = (name, dateStr) =>
+      (this.idealAvailability[name] && this.idealAvailability[name][dateStr]) || null;
+
+    // Build list of all staff
+    const allNames = Object.keys(this.allAvailability || {});
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateObj = new Date(year, month, day);
+      const dateStr = dateObj.toISOString().split('T')[0];
+
+      // Ensure date object in roster
+      if (!newRoster[dateStr]) {
+        newRoster[dateStr] = {
+          paraDay: null,
+          nurseDay: null,
+          paraNight: null,
+          nurseNight: null
+        };
+      }
+
+      const entryByName = {};
+      allNames.forEach(name => {
+        entryByName[name] = getAvailEntry(name, dateStr);
+      });
+
+      // --- DAY VACATION HANDLING ---
+      // If someone has Day = V, they are marked as vacation in roster and
+      // their cap was already reduced by getMonthlyCapsForCurrentMonth()
+      allNames.forEach(name => {
+        const entry = entryByName[name];
+        if (!entry || entry.Day !== 'V') return;
+
+        const role = this.getRoleForStaff(name);
+        if (!role) return;
+
+        if (role === 'para') {
+          newRoster[dateStr].paraDay = `${name} (Vacation)`;
+        } else if (role === 'rn') {
+          newRoster[dateStr].nurseDay = `${name} (Vacation)`;
+        }
+      });
+
+      // Helper to choose a person for a given role+shift
+      const pickStaff = (role, shift) =>
 
   updateAvailabilitySummary() {
     if (this.isOverviewMode) {
