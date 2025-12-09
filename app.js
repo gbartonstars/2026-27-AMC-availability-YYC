@@ -107,6 +107,12 @@ class StaffScheduleApp {
     this.idealAvailability = {};
     this.idealDate = new Date(this.dateRangeStart.getTime());
 
+    // Roster / lock support
+    this.generatedRoster = {};
+    this.rosterDate = new Date(this.dateRangeStart.getTime());
+    this.lockFirstSix = false;
+    this.lockLastSix = false;
+
     this.bindEvents();
     this.loadAllData();
   }
