@@ -915,6 +915,25 @@ class StaffScheduleApp {
     return wrapper;
   }
 
+  // Helper: classify staff as RN or Paramedic
+  getRoleForStaff(name) {
+    const rnNames = new Set([
+      "Graham Newton","Stuart Grant","Kellie Ann Vogelaar",
+      "Michelle Sexsmith","Carolyn Hogan","Kris Austin",
+      "Flo Butler","Jodi Scott","Janice Kirkham"
+    ]);
+
+    const paraNames = new Set([
+      "Greg Barton","Scott McTaggart","Dave Allison",
+      "Mackenzie Wardle","Chad Hegge","Ken King",
+      "John Doyle","Bob Odney"
+    ]);
+
+    if (rnNames.has(name)) return 'rn';
+    if (paraNames.has(name)) return 'para';
+    return null;
+  }
+  
   getOverviewCountsForDate(dateStr) {
     let rnDay = 0, rnNight = 0, paraDay = 0, paraNight = 0;
 
