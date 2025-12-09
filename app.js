@@ -757,6 +757,19 @@ class StaffScheduleApp {
         }
       }
 
+      // EXTRA RULE: If Day is Vacation, Night must be empty
+      if (shift === 'Day' && newVal === 'V') {
+        if (thisNight && thisNight !== '') {
+          alert('If you select Vacation for the Day shift, the Night shift on the same date must be empty.');
+          restoreOldValue();
+          return;
+        }
+      }
+      if (shift === 'Night' && (thisDay === 'V')) {
+        alert('You cannot select a Night value on a date where the Day shift is Vacation.');
+        restoreOldValue();
+        return;
+      }
       if (newVal === 'A' || newVal === 'V') {
         if (shift === 'Day') {
           if (
