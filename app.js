@@ -108,7 +108,9 @@ class StaffScheduleApp {
     this.generatedRoster = {};      // auto-generated roster from Firebase
     this.idealDate = new Date(this.dateRangeStart.getTime());
     this.rosterDate = new Date(this.dateRangeStart.getTime()); // roster view month
-
+// lock flags (first / last 6 months)
+    this.lockFirstSix = false;
+    this.lockLastSix = false;
     this.bindEvents();
     this.loadAllData();
   }
