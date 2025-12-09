@@ -1140,6 +1140,9 @@ class StaffScheduleApp {
           const availVal = entry[shift];
           if (availVal !== 'A' && availVal !== '') return; // only A or empty
 
+          // NO DOUBLE SHIFTS RULE
+          if (this.isDoubleShift(name, dateStr, shift)) return;
+          
           const idealEntry = getIdealEntry(name, dateStr);
           const idealVal = idealEntry ? idealEntry[shift] : '';
           let score = 1;
