@@ -150,7 +150,19 @@ class StaffScheduleApp {
     }, error => {
       console.error("Error listening to Firebase generatedRoster", error);
     });
+
+    // NEW: listen for schedule locks
+    const locksRef = firebase.database().ref("locks");
+    locksRef.on("value", snapshot => {
+      const data = snapshot.val() || {};
+      this.lockFirstSix = !!data.firstSixMonths;
+      this.lockLastSix = !!data.lastSixMonths;
+      this.updateLockStatusText();
+    }, error => {
+      console.error("Error listening to Firebase locks", error);
+    });
   }
+  
 
   bindEvents() {
     document.getElementById('staffSelect')
