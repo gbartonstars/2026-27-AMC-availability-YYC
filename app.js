@@ -258,7 +258,7 @@ class StaffScheduleApp {
         locksRef.update({ lastSixMonths: false });
       });
     }
-
+  }
   async onStaffChange(e) {
     const enteredName = e.target.value;
     if (!enteredName) {
