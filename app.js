@@ -252,10 +252,18 @@ class StaffScheduleApp {
       this.populateViewStaffSelector();
       document.getElementById('viewAllSection').style.display = 'block';
       document.getElementById('adminRosterControls').style.display = 'block';
+
+      // Lock controls only for Greg
+      if (enteredName === "Greg Barton") {
+        document.getElementById('adminLockControls').style.display = 'block';
+      } else {
+        document.getElementById('adminLockControls').style.display = 'none';
+      }
     } else {
       this.currentViewStaff = enteredName;
       document.getElementById('viewAllSection').style.display = 'none';
       document.getElementById('adminRosterControls').style.display = 'none';
+      document.getElementById('adminLockControls').style.display = 'none';
     }
 
     if (this.idealUsers.has(enteredName)) {
