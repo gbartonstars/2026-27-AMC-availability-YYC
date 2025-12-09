@@ -1054,6 +1054,20 @@ class StaffScheduleApp {
     return caps;
   }
 
+  isDoubleShift(name, dateStr, shift) {
+    const entry = this.allAvailability[name] && this.allAvailability[name][dateStr];
+    if (!entry) return false;
+
+    if (shift === 'Day') {
+      return entry.Night === 'A';
+    } else {
+      const prevDay = new Date(new Date(dateStr).getTime() - 24*60*60*1000).toISOString().split('T')[0];
+      const prevEntry = this.allAvailability[name] && this.allAvailability[name][prevDay];
+      return prevEntry && prevEntry.Day === 'A';
+    }
+    return false;
+  }
+  
   // Generate roster for the current roster month (best-effort greedy)
   onGenerateRoster() {
     if (!this.currentStaff || this.currentStaff !== "Greg Barton") {
