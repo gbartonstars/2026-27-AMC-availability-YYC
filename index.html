@@ -79,7 +79,19 @@
   <button id="openRosterView">Open Auto Roster</button>
   <button id="generateRosterButton">Generate Roster</button>
 </section>
-
+<!-- Admin-only schedule lock controls (Greg only) -->
+<section class="staff-selection" id="adminLockControls" style="display:none; margin-top:10px;">
+  <h3>Schedule Locks</h3>
+  <div>
+    <button id="lockFirstSixBtn">Lock First 6 Months</button>
+    <button id="unlockFirstSixBtn">Unlock First 6 Months</button>
+  </div>
+  <div style="margin-top:8px;">
+    <button id="lockLastSixBtn">Lock Last 6 Months</button>
+    <button id="unlockLastSixBtn">Unlock Last 6 Months</button>
+  </div>
+  <p id="lockStatusText" style="margin-top:8px; font-size:0.95em;"></p>
+</section>
     <!-- Main availability schedule -->
     <section id="scheduleSection" style="display:none;">
       <h2 id="scheduleTitle"></h2>
