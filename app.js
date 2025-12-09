@@ -475,9 +475,20 @@ class StaffScheduleApp {
       `${monthName} ${year}`;
   }
 
+  // NEW: show current lock status in the admin panel
+  updateLockStatusText() {
+    const el = document.getElementById('lockStatusText');
+    if (!el) return;
+
+    const first = this.lockFirstSix ? "LOCKED" : "unlocked";
+    const last = this.lockLastSix ? "LOCKED" : "unlocked";
+    el.textContent = `First 6 months: ${first} | Last 6 months: ${last}`;
+  }
+
   renderCalendar() {
     const calendarEl = document.getElementById('calendar');
     calendarEl.innerHTML = '';
+    
 
     this.daysOfWeek.forEach(day => {
       const dayNameEl = document.createElement('div');
