@@ -49,10 +49,10 @@ class StaffScheduleApp {
       "Michelle Sexsmith": 4,
       "Scott McTaggart": 13,
       "Greg Barton": 13,
-      "Dave Allison": 7,
-      "Ken King": 11,
-      "Bob Odney": 5,
-      "Chad Hegge": 5,
+      "Dave Allison": 6,
+      "Ken King": 10,
+      "Bob Odney": 6,
+      "Chad Hegge": 6,
       "Mackenzie Wardle": 6
     };
 
@@ -68,10 +68,10 @@ class StaffScheduleApp {
       "Michelle Sexsmith": 4,
       "Scott McTaggart": 13,
       "Greg Barton": 13,
-      "Dave Allison": 8,
+      "Dave Allison": 6,
       "Ken King": 12,
-      "Bob Odney": 5,
-      "Chad Hegge": 5,
+      "Bob Odney": 6,
+      "Chad Hegge": 6,
       "Mackenzie Wardle": 6
     };
 
