@@ -92,9 +92,10 @@ class StaffScheduleApp {
       { value: '',  label: 'Not Selected' },
       { value: 'D', label: 'Ideal Day' },
       { value: 'N', label: 'Ideal Night' },
-      { value: 'T', label: 'Training' }
+      { value: 'T', label: 'Training' },
+      { value: 'V', label: 'Vacation' }  // NEW
     ];
-
+    
     this.monthNames = [
       "January","February","March","April","May","June",
       "July","August","September","October","November","December"
@@ -633,6 +634,19 @@ class StaffScheduleApp {
     }
   }
 
+  // Mirror Vacation from ideal into main availability
+      if (!this.allAvailability[activeStaff]) this.allAvailability[activeStaff] = {};
+      if (!this.allAvailability[activeStaff][dateStr]) {
+        this.allAvailability[activeStaff][dateStr] = {
+          Day: '', Night: '', DayTrainingNote: '', NightTrainingNote: ''
+        };
+      }
+      if (newVal === 'V') {
+        this.allAvailability[activeStaff][dateStr][shiftType] = 'V';
+      } else if (this.allAvailability[activeStaff][dateStr][shiftType] === 'V') {
+        this.allAvailability[activeStaff][dateStr][shiftType] = '';
+      }
+
   renderIdealCalendar() {
     const calendarEl = document.getElementById('idealCalendar');
     calendarEl.innerHTML = '';
@@ -709,7 +723,20 @@ class StaffScheduleApp {
 
       calendarEl.appendChild(dayCell);
     }
+
+    // Update bottom-of-page ideal summary
+    const summaryEl = document.getElementById('idealSummary');
+    if (summaryEl) {
+      const totals = this.getIdealTotalsForCurrentMonth();
+      let html = '';
+      Object.keys(totals).forEach(name => {
+        const t = totals[name];
+        html += `${name}: Day ${t.day} | Night ${t.night}<br>`;
+      });
+      summaryEl.innerHTML = html;
+    }
   }
+  
 
   createAvailabilityDropdown(dateStr, shiftType) {
     const select = document.createElement('select');
@@ -834,6 +861,20 @@ class StaffScheduleApp {
       }
 
       staffDays[dateStr][shift] = newVal;
+      // Mirror Vacation into idealAvailability for ideal users
+      if (this.idealUsers.has(activeStaff)) {
+        if (!this.idealAvailability[activeStaff]) this.idealAvailability[activeStaff] = {};
+        if (!this.idealAvailability[activeStaff][dateStr]) {
+          this.idealAvailability[activeStaff][dateStr] = {
+            Day: '', Night: '', DayTrainingNote: '', NightTrainingNote: ''
+          };
+        }
+        if (newVal === 'V') {
+          this.idealAvailability[activeStaff][dateStr][shift] = 'V';
+        } else if (this.idealAvailability[activeStaff][dateStr][shift] === 'V') {
+          this.idealAvailability[activeStaff][dateStr][shift] = '';
+        }
+      }
 
       if (newVal === 'T') {
         noteInput.style.display = 'block';
@@ -919,6 +960,19 @@ class StaffScheduleApp {
 
       const newVal = select.value;
       staffDays[dateStr][shiftType] = newVal;
+
+      // Mirror Vacation from ideal into main availability
+      if (!this.allAvailability[activeStaff]) this.allAvailability[activeStaff] = {};
+      if (!this.allAvailability[activeStaff][dateStr]) {
+        this.allAvailability[activeStaff][dateStr] = {
+          Day: '', Night: '', DayTrainingNote: '', NightTrainingNote: ''
+        };
+      }
+      if (newVal === 'V') {
+        this.allAvailability[activeStaff][dateStr][shiftType] = 'V';
+      } else if (this.allAvailability[activeStaff][dateStr][shiftType] === 'V') {
+        this.allAvailability[activeStaff][dateStr][shiftType] = '';
+      }
 
       if (newVal === 'T') {
         noteInput.style.display = 'block';
