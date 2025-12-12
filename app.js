@@ -53,7 +53,8 @@ class StaffScheduleApp {
       "Ken King": 10,
       "Bob Odney": 6,
       "Chad Hegge": 6,
-      "Mackenzie Wardle": 6
+      "Mackenzie Wardle": 6,
+      "John Doyle": 4 
     };
 
     this.minimumRequired31 = {
@@ -72,7 +73,8 @@ class StaffScheduleApp {
       "Ken King": 12,
       "Bob Odney": 6,
       "Chad Hegge": 6,
-      "Mackenzie Wardle": 6
+      "Mackenzie Wardle": 6,
+      "John Doyle": 4 
     };
 
     this.availabilityOptions = [
