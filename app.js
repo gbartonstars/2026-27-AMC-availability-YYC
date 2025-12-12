@@ -634,19 +634,29 @@ class StaffScheduleApp {
     }
   }
 
-  // Mirror Vacation from ideal into main availability
-      if (!this.allAvailability[activeStaff]) this.allAvailability[activeStaff] = {};
-      if (!this.allAvailability[activeStaff][dateStr]) {
-        this.allAvailability[activeStaff][dateStr] = {
-          Day: '', Night: '', DayTrainingNote: '', NightTrainingNote: ''
-        };
-      }
-      if (newVal === 'V') {
-        this.allAvailability[activeStaff][dateStr][shiftType] = 'V';
-      } else if (this.allAvailability[activeStaff][dateStr][shiftType] === 'V') {
-        this.allAvailability[activeStaff][dateStr][shiftType] = '';
-      }
+  getIdealTotalsForCurrentMonth() {
+    const year  = this.idealDate.getFullYear();
+    const month = this.idealDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+    const totals = {}; // name -> { day: 0, night: 0 }
+    const idealUsers = ["Greg Barton","Scott McTaggart","Stuart Grant","Graham Newton"];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      const dateStr = d.toISOString().split('T')[0];
+
+      idealUsers.forEach(name => {
+        const entry = (this.idealAvailability[name] && this.idealAvailability[name][dateStr]) || {};
+        if (!totals[name]) totals[name] = { day: 0, night: 0 };
+
+        if (entry.Day === 'D' || entry.Day === 'T' || entry.Day === 'V') totals[name].day += 1;
+        if (entry.Night === 'N' || entry.Night === 'T' || entry.Night === 'V') totals[name].night += 1;
+      });
+    }
+    return totals;
+  }
+  
   renderIdealCalendar() {
     const calendarEl = document.getElementById('idealCalendar');
     calendarEl.innerHTML = '';
