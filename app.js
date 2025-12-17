@@ -1266,14 +1266,24 @@ class StaffScheduleApp {
     const selects = document.querySelectorAll('.availability-dropdown');
     const DAY = "Day", NIGHT = "Night";
     const shiftMap = new Map();
+    const vacationExempt = new Set(["Kellie Ann Vogelaar","Bob Odney","Chad Hegge","Dave Allison"]);
 
-    // Per-staff totals: count A + V
+    // Per-staff totals: count A always; count V only if not exempt
     selects.forEach(sel => {
-      if (sel.value === 'A' || sel.value === 'V') {
-        const dateStr = sel.dataset.date;
-        const shift   = sel.dataset.shiftType;
-        if (!shiftMap.has(dateStr)) shiftMap.set(dateStr, {});
-        shiftMap.get(dateStr)[shift] = true;
+      const val = sel.value;
+      const dateStr = sel.dataset.date;
+      const shift   = sel.dataset.shiftType;
+
+      if (!shiftMap.has(dateStr)) shiftMap.set(dateStr, {});
+      const cur = shiftMap.get(dateStr);
+
+      if (val === 'A') {
+        cur[shift] = true;
+      } else if (val === 'V') {
+        // For these staff, V does NOT contribute to totals
+        if (!vacationExempt.has(this.currentViewStaff)) {
+          cur[shift] = true;
+        }
       }
     });
 
