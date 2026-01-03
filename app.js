@@ -9,7 +9,7 @@ class StaffScheduleApp {
       "Scott McTaggart",
       "Graham Newton"
     ]);
-
+    
     this.idealUsers = new Set([
       "Greg Barton",
       "Scott McTaggart",
@@ -17,6 +17,11 @@ class StaffScheduleApp {
       "Stuart Grant"
     ]);
 
+    // Vacation AI constants
+    this.vacationStaff = new Set(['Greg Barton', 'Scott McTaggart']);
+    this.minDayStaff = 8;
+    this.minNightStaff = 6;
+    this.maxConsecutiveNights = 4;
     this.loginCodes = {
       "Greg Barton": "B123",
       "Scott McTaggart": "S456",
@@ -1257,6 +1262,9 @@ class StaffScheduleApp {
 
     const allNames = Object.keys(this.allAvailability || {});
 
+    // AI PRIORITY 1: Vacation staff get 50% fewer shifts
+    const getVacationScore = (name) => this.vacationStaff.has(name) ? 0.5 : 1.0;
+    
     // helper: check if assigning this shift would cause a double shift
     const wouldBeDoubleShift = (name, dateStr, role, shift) => {
       const thisDay = newRoster[dateStr] || {};
