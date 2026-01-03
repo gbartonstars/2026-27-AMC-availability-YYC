@@ -1236,7 +1236,7 @@ class StaffScheduleApp {
     }
   }
 
-  // Generate roster for the current roster month (best-effort greedy)
+  // Generate roster for the current roster month (ideal-aware, no double shifts)
   onGenerateRoster() {
     if (!this.currentStaff || this.currentStaff !== "Greg Barton") {
       alert("Only Greg can generate the roster.");
@@ -1256,6 +1256,38 @@ class StaffScheduleApp {
       (this.idealAvailability[name] && this.idealAvailability[name][dateStr]) || null;
 
     const allNames = Object.keys(this.allAvailability || {});
+
+    // helper: check if assigning this shift would cause a double shift
+    const wouldBeDoubleShift = (name, dateStr, role, shift) => {
+      const thisDay = newRoster[dateStr] || {};
+
+      // Same-day double: Day+Night or Night+Day for same role
+      if (shift === 'Day') {
+        if ((role === 'para'  && thisDay.paraNight  === name) ||
+            (role === 'rn'    && thisDay.nurseNight === name)) {
+          return true;
+        }
+      } else if (shift === 'Night') {
+        if ((role === 'para'  && thisDay.paraDay  === name) ||
+            (role === 'rn'    && thisDay.nurseDay === name)) {
+          return true;
+        }
+      }
+
+      // Night then next-day Day
+      if (shift === 'Day') {
+        const d = new Date(dateStr);
+        const prevDateStr = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1)
+          .toISOString().split('T')[0];
+        const prevDay = newRoster[prevDateStr] || {};
+        if ((role === 'para'  && prevDay.paraNight  === name) ||
+            (role === 'rn'    && prevDay.nurseNight === name)) {
+          return true;
+        }
+      }
+
+      return false;
+    };
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateObj = new Date(year, month, day);
@@ -1308,16 +1340,21 @@ class StaffScheduleApp {
           const availVal = entry[shift];
           if (availVal !== 'A' && availVal !== '') return; // only A or empty
 
-          // NO DOUBLE SHIFTS RULE
-          if (this.isDoubleShift(name, dateStr, shift)) return;
+          // Prevent double-shift based on assignments already made
+          if (wouldBeDoubleShift(name, dateStr, role, shift)) return;
 
           const idealEntry = getIdealEntry(name, dateStr);
           const idealVal = idealEntry ? idealEntry[shift] : '';
           let score = 1;
+
+          // Ideal schedule priority
           if ((shift === 'Day' && idealVal === 'D') ||
               (shift === 'Night' && idealVal === 'N')) {
-            score += 1;
+            score += 3; // stronger weight than before
           }
+
+          // Light fairness: fewer used shifts preferred
+          score += (1.0 / (capInfo.used + 1));
 
           if (score > bestScore) {
             bestScore = score;
@@ -1351,7 +1388,7 @@ class StaffScheduleApp {
     this.generatedRoster = newRoster;
     firebase.database().ref("generatedRoster").set(newRoster);
 
-    alert("Roster generated for the current month.");
+    alert("Smarter roster generated (Ideal priority, no double shifts).");
     this.renderRosterCalendar();
   }
 
