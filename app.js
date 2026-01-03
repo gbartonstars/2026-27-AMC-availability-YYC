@@ -1096,6 +1096,88 @@ class StaffScheduleApp {
     return { rnDay, rnNight, paraDay, paraNight };
   }
 
+  getVacationTotals(startDate, endDate) {
+    // Count Day 'V' and Night 'V' as separate vacation shifts
+    const totals = {}; // name -> count
+
+    const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const end   = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+    Object.keys(this.allAvailability || {}).forEach(name => {
+      const days = this.allAvailability[name] || {};
+      let count = 0;
+
+      Object.keys(days).forEach(dateStr => {
+        const d = new Date(dateStr);
+        if (isNaN(d)) return;
+        if (d < start || d > end) return;
+
+        const entry = days[dateStr];
+        if (!entry) return;
+
+        if (entry.Day === 'V') count += 1;
+        if (entry.Night === 'V') count += 1;
+      });
+
+      if (count > 0) {
+        totals[name] = count;
+      }
+    });
+
+    return totals;
+  }
+
+  showVacationSummary(mode) {
+    if (!this.currentStaff ||
+        !["Greg Barton","Scott McTaggart","Graham Newton","Dave Allison"].includes(this.currentStaff)) {
+      alert("Vacation summary is only available to Greg, Scott, Graham, or Dave.");
+      return;
+    }
+
+    const outEl = document.getElementById('vacationSummaryOutput');
+    if (!outEl) return;
+
+    let start, end, title;
+
+    if (mode === 'month') {
+      // Use current visible month on main schedule
+      const year  = this.currentDate.getFullYear();
+      const month = this.currentDate.getMonth();
+      start = new Date(year, month, 1);
+      end   = new Date(year, month + 1, 0);
+      title = `Vacation for ${this.monthNames[month]} ${year}`;
+    } else {
+      // Fiscal year: April 1 to March 31 containing currentDate
+      const curYear  = this.currentDate.getFullYear();
+      const curMonth = this.currentDate.getMonth(); // 0=Jan
+      let fyStartYear, fyEndYear;
+      if (curMonth >= 3) {        // April (3) or later => FY starts this year
+        fyStartYear = curYear;
+        fyEndYear   = curYear + 1;
+      } else {                    // Jan–Mar => FY started last year
+        fyStartYear = curYear - 1;
+        fyEndYear   = curYear;
+      }
+      start = new Date(fyStartYear, 3, 1);  // April 1
+      end   = new Date(fyEndYear, 2, 31);   // March 31
+      title = `Vacation for Fiscal Year ${fyStartYear}-${fyEndYear}`;
+    }
+
+    const totals = this.getVacationTotals(start, end);
+    const names = Object.keys(totals).sort();
+
+    if (names.length === 0) {
+      outEl.innerHTML = `${title}: No vacation recorded in this period.`;
+      return;
+    }
+
+    let html = `<strong>${title}</strong><br>`;
+    names.forEach(name => {
+      html += `${name}: ${totals[name]} vacation shifts<br>`;
+    });
+    outEl.innerHTML = html;
+  }
+
   // Helper: compute per-staff adjusted caps for the current roster month
   getMonthlyCapsForCurrentMonth() {
     const year  = this.rosterDate.getFullYear();
