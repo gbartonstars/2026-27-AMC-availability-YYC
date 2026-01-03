@@ -295,11 +295,21 @@ class StaffScheduleApp {
       } else {
         document.getElementById('adminLockControls').style.display = 'none';
       }
+
+      // Vacation summary visible only to Greg, Scott, Graham, Dave
+      const vacSec = document.getElementById('vacationSummarySection');
+      if (["Greg Barton","Scott McTaggart","Graham Newton","Dave Allison"].includes(enteredName)) {
+        vacSec.style.display = 'block';
+      } else {
+        vacSec.style.display = 'none';
+      }
     } else {
       this.currentViewStaff = enteredName;
       document.getElementById('viewAllSection').style.display = 'none';
       document.getElementById('adminRosterControls').style.display = 'none';
       document.getElementById('adminLockControls').style.display = 'none';
+      const vacSec = document.getElementById('vacationSummarySection');
+      if (vacSec) vacSec.style.display = 'none';
     }
 
     if (this.idealUsers.has(enteredName)) {
