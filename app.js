@@ -5,18 +5,17 @@ class StaffScheduleApp {
     this.isOverviewMode = false;
 
     this.privilegedUsers = new Set([
-      "Greg Barton",
-      "Scott McTaggart",
-      "Graham Newton"
-    ]);
-    
-    this.idealUsers = new Set([
-      "Greg Barton",
-      "Scott McTaggart",
-      "Graham Newton",
-      "Stuart Grant"
-    ]);
+  "Greg Barton",      // 👈 Feature access ONLY
+  "Scott McTaggart", 
+  "Graham Newton"
+]);
 
+this.idealUsers = new Set([  // 👈 KEEP - Roster priority + ideal tab
+  "Greg Barton",
+  "Scott McTaggart", 
+  "Graham Newton",
+  "Stuart Grant"
+]);
     
     this.loginCodes = {
       "Greg Barton": "B123",
@@ -228,7 +227,7 @@ class StaffScheduleApp {
     const locksRef = firebase.database().ref("locks");
 
     const ensureGreg = () => {
-      if (!this.currentStaff || this.currentStaff !== "Greg Barton") {
+     if (!this.currentStaff || !this.privilegedUsers.has(this.currentStaff))  {
         alert("Only Greg can change schedule locks.");
         return false;
       }
@@ -1259,7 +1258,7 @@ class StaffScheduleApp {
     const allNames = Object.keys(this.allAvailability || {});
 
     // AI PRIORITY 1: Vacation staff get 50% fewer shifts
-    const getVacationScore = (name) => this.vacationStaff.has(name) ? 0.5 : 1.0;
+    const getVacationScore = (name) => this.idealUsers.has(name) ? 0.5 : 1.0;
     
     // helper: check if assigning this shift would cause a double shift
     const wouldBeDoubleShift = (name, dateStr, role, shift) => {
@@ -1366,11 +1365,12 @@ class StaffScheduleApp {
           let score = getVacationScore(name);
 
 
-          // Ideal schedule priority
-          if ((shift === 'Day' && idealVal === 'D') ||
-              (shift === 'Night' && idealVal === 'N')) {
-            score += 3; // stronger weight than before
-          }
+          // 👈 IDEAL MATCH BONUS for all 4 idealUsers
+if (this.idealUsers.has(name) && 
+    ((shift === 'Day' && idealVal === 'D') || 
+     (shift === 'Night' && idealVal === 'N'))) {
+  score += 10;  // Massive priority boost
+}
 
           // Light fairness: fewer used shifts preferred
           score += (1.0 / (capInfo.used + 1));
