@@ -1353,7 +1353,8 @@ class StaffScheduleApp {
 
           const idealEntry = getIdealEntry(name, dateStr);
           const idealVal = idealEntry ? idealEntry[shift] : '';
-          let score = 1;
+          let score = getVacationScore(name);
+
 
           // Ideal schedule priority
           if ((shift === 'Day' && idealVal === 'D') ||
