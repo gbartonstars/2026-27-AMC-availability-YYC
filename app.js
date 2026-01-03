@@ -1458,7 +1458,7 @@ class StaffScheduleApp {
     ]);
 
     if (!nurseNames.has(name)) {
-      if (daysInMonth === 30) {
+      if (daysInMonth === 30 || daysInMonth === 28) {
         minimum = this.minimumRequired30[name] || 0;
       } else if (daysInMonth === 31) {
         minimum = this.minimumRequired31[name] || 0;
@@ -1468,7 +1468,7 @@ class StaffScheduleApp {
       const isJulOrLater = (month >= 6);                                  // Jul+
 
       if (isAprMayJun) {
-        if (daysInMonth === 30) {
+        if (daysInMonth === 30 || daysInMonth === 28) {
           const map30 = {
             "Graham Newton": 13,
             "Stuart Grant": 13,
@@ -1496,7 +1496,7 @@ class StaffScheduleApp {
           minimum = map31[name] ?? 0;
         }
       } else if (isJulOrLater) {
-        if (daysInMonth === 30) {
+        if (daysInMonth === 30 || daysInMonth === 28) {
           const map30 = {
             "Graham Newton": 12,
             "Stuart Grant": 12,
@@ -1522,13 +1522,14 @@ class StaffScheduleApp {
           };
           minimum = map31[name] ?? 0;
         }
-      } else {
-        if (daysInMonth === 30) {
+     } else {
+        // Jan–Mar: fall back to original tables
+        if (daysInMonth === 30 || daysInMonth === 28) {
           minimum = this.minimumRequired30[name] || 0;
         } else if (daysInMonth === 31) {
           minimum = this.minimumRequired31[name] || 0;
         }
-      }
+      } 
     }
 
     const requiredAdjusted = minimum * 2;
