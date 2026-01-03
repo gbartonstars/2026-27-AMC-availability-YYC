@@ -258,6 +258,17 @@ class StaffScheduleApp {
         locksRef.update({ lastSixMonths: false });
       });
     }
+
+    // Vacation summary buttons
+    const showVacMonthBtn = document.getElementById('showVacationMonth');
+    const showVacYearBtn  = document.getElementById('showVacationYear');
+
+    if (showVacMonthBtn) {
+      showVacMonthBtn.addEventListener('click', () => this.showVacationSummary('month'));
+    }
+    if (showVacYearBtn) {
+      showVacYearBtn.addEventListener('click', () => this.showVacationSummary('year'));
+    }
   }
 
   async onStaffChange(e) {
