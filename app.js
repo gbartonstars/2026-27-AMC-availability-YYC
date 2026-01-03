@@ -17,11 +17,7 @@ class StaffScheduleApp {
       "Stuart Grant"
     ]);
 
-    // Vacation AI constants
-    this.vacationStaff = new Set(['Greg Barton', 'Scott McTaggart']);
-    this.minDayStaff = 8;
-    this.minNightStaff = 6;
-    this.maxConsecutiveNights = 4;
+    
     this.loginCodes = {
       "Greg Barton": "B123",
       "Scott McTaggart": "S456",
