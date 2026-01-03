@@ -8,7 +8,7 @@ class StaffScheduleApp {
   "Greg Barton",      // 👈 Feature access ONLY
   "Scott McTaggart", 
   "Graham Newton"
-]),
+])
 
 this.idealUsers = new Set([  // 👈 KEEP - Roster priority + ideal tab
   "Greg Barton",
