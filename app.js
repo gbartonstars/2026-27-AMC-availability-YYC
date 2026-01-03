@@ -1336,6 +1336,7 @@ class StaffScheduleApp {
         let bestScore = -1;
 
         allNames.forEach(name => {
+          
           const roleType = this.getRoleForStaff(name);
           if (roleType !== role) return;
 
@@ -1343,7 +1344,20 @@ class StaffScheduleApp {
           if (!capInfo || capInfo.used >= capInfo.cap) return;
 
           const entry = entryByName[name];
-          if (!entry) return;
+          // Vacation BLOCK
+          if (entry[shift] === 'V') return;
+           if (!entry) return;
+          let score = getVacationScore(name);
+
+          // Ideal schedule PRIORITY (+10 for ideal users)
+          const idealEntry = getIdealEntry(name, dateStr);
+          const idealVal = idealEntry ? idealEntry[shift] : '';
+          if (this.idealUsers.has(name) && 
+              ((shift === 'Day' && idealVal === 'D') || 
+               (shift === 'Night' && idealVal === 'N'))) {
+            score += 10; // IDEAL MATCH
+          }
+         
 
           const availVal = entry[shift];
           if (availVal !== 'A' && availVal !== '') return; // only A or empty
