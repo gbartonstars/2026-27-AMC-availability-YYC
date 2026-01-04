@@ -1414,6 +1414,9 @@ class StaffScheduleApp {
   onGenerateRoster() {
     if (!this.currentStaff || !this.privilegedUsers.has(this.currentStaff)) return;
 
+    // CRITICAL: Initialize generatedRoster as empty object
+    this.generatedRoster = {};
+
     const year = this.rosterDate.getFullYear();
     const month = this.rosterDate.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
