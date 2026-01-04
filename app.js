@@ -1412,7 +1412,20 @@ class StaffScheduleApp {
 
   // Generate roster for the current roster month (ideal-aware, no double shifts)
   onGenerateRoster() {
-    if (!this.currentStaff || !this.privilegedUsers.has(this.currentStaff)) return;
+    console.log("Generate Roster clicked! currentStaff:", this.currentStaff);
+    console.log("privilegedUsers:", this.privilegedUsers);
+    
+    // Check if user is authorized (Greg, Scott, Graham, or Stuart)
+    if (!this.currentStaff) {
+      alert("Please select a staff member first!");
+      return;
+    }
+    
+    if (!this.privilegedUsers.has(this.currentStaff)) {
+      console.log(`${this.currentStaff} is not in privilegedUsers list`);
+      alert(`${this.currentStaff} does not have permission to generate rosters.`);
+      return;
+    }
 
     // CRITICAL: Initialize generatedRoster as empty object
     this.generatedRoster = {};
