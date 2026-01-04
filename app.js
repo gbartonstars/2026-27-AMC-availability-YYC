@@ -1436,54 +1436,24 @@ class StaffScheduleApp {
       "John Doyle","Bob Odney"
     ]);
 
-    const getVacationExclusions = (dateStr) => {
-      const excluded = new Set();
+    // Get ALL staff who marked as Available (A) for a shift
+    const getStaffAvailableForShift = (dateStr, shiftType) => {
+      const available = [];
+      
       Object.keys(this.allAvailability).forEach(name => {
         const staffDays = this.allAvailability[name] || {};
         const entry = staffDays[dateStr];
-        if (entry && (entry.Day === 'V' || entry.Night === 'V')) {
-          excluded.add(name);
+        
+        // Only count if marked 'A' (Available), not 'V' (Vacation)
+        if (entry && entry[shiftType] === 'A') {
+          available.push(name);
         }
       });
-      return excluded;
+
+      return available;
     };
 
-    // Build ideal schedule map - THIS IS KEY
-    const idealMap = {}; // dateStr -> { Day: name, Night: name, conflict: boolean }
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-      const d = new Date(year, month, day);
-      const dateStr = d.toISOString().split('T')[0];
-      idealMap[dateStr] = { Day: null, Night: null, conflict: false };
-    }
-
-    // Fill in ideal selections from all 4 ideal users
-    this.idealUsers.forEach(name => {
-      const staffIdeal = this.idealAvailability[name] || {};
-      Object.keys(staffIdeal).forEach(dateStr => {
-        if (!idealMap[dateStr]) return; // Only this month
-        
-        const entry = staffIdeal[dateStr] || {};
-        
-        if (entry.Day === 'D') {
-          if (idealMap[dateStr].Day && idealMap[dateStr].Day !== name) {
-            idealMap[dateStr].conflict = true;
-          } else {
-            idealMap[dateStr].Day = name;
-          }
-        }
-        
-        if (entry.Night === 'N') {
-          if (idealMap[dateStr].Night && idealMap[dateStr].Night !== name) {
-            idealMap[dateStr].conflict = true;
-          } else {
-            idealMap[dateStr].Night = name;
-          }
-        }
-      });
-    });
-
-    // Initialize roster
+    // Initialize roster for all days
     for (let day = 1; day <= daysInMonth; day++) {
       const d = new Date(year, month, day);
       const dateStr = d.toISOString().split('T')[0];
@@ -1496,99 +1466,116 @@ class StaffScheduleApp {
       };
     }
 
-    // Track assignments to avoid double-booking
-    const rosterSoFar = {};
-
-    // STEP 1: Place ideal schedule selections FIRST
-    Object.keys(idealMap).forEach(dateStr => {
-      const ideal = idealMap[dateStr];
-
-      if (ideal.conflict) {
-        this.generatedRoster[dateStr].conflicts = true;
-      }
-
-      // Place Day shift
-      if (ideal.Day && !ideal.conflict) {
-        const name = ideal.Day;
-        const isRN = rnNames.has(name);
-        const shiftKey = isRN ? 'nurseDay' : 'paraDay';
-        this.generatedRoster[dateStr][shiftKey] = name;
+    // STEP 1: Place ideal schedule selections (Greg, Scott, Graham, Stuart)
+    console.log("STEP 1: Placing ideal schedule selections...");
+    
+    const idealPlaced = {}; // Track who was placed
+    
+    this.idealUsers.forEach(name => {
+      const staffIdeal = this.idealAvailability[name] || {};
+      const isRN = rnNames.has(name);
+      
+      Object.keys(staffIdeal).forEach(dateStr => {
+        // Only this month
+        const d = new Date(dateStr);
+        if (d.getMonth() !== month || d.getFullYear() !== year) return;
         
-        if (!rosterSoFar[name]) rosterSoFar[name] = [];
-        rosterSoFar[name].push(dateStr);
-      }
-
-      // Place Night shift
-      if (ideal.Night && !ideal.conflict) {
-        const name = ideal.Night;
-        const isRN = rnNames.has(name);
-        const shiftKey = isRN ? 'nurseNight' : 'paraNight';
-        this.generatedRoster[dateStr][shiftKey] = name;
+        const entry = staffIdeal[dateStr] || {};
         
-        if (!rosterSoFar[name]) rosterSoFar[name] = [];
-        rosterSoFar[name].push(dateStr);
-      }
+        // Place Day shift (D = Ideal Day)
+        if (entry.Day === 'D') {
+          const shiftKey = isRN ? 'nurseDay' : 'paraDay';
+          
+          // Check for conflict (multiple people selected same shift)
+          if (this.generatedRoster[dateStr][shiftKey]) {
+            this.generatedRoster[dateStr].conflicts = true;
+            console.log(`CONFLICT on ${dateStr} ${shiftKey}: ${this.generatedRoster[dateStr][shiftKey]} and ${name}`);
+          } else {
+            this.generatedRoster[dateStr][shiftKey] = name;
+            if (!idealPlaced[name]) idealPlaced[name] = [];
+            idealPlaced[name].push(dateStr);
+            console.log(`Placed ${name} on ${dateStr} ${shiftKey}`);
+          }
+        }
+        
+        // Place Night shift (N = Ideal Night)
+        if (entry.Night === 'N') {
+          const shiftKey = isRN ? 'nurseNight' : 'paraNight';
+          
+          // Check for conflict
+          if (this.generatedRoster[dateStr][shiftKey]) {
+            this.generatedRoster[dateStr].conflicts = true;
+            console.log(`CONFLICT on ${dateStr} ${shiftKey}: ${this.generatedRoster[dateStr][shiftKey]} and ${name}`);
+          } else {
+            this.generatedRoster[dateStr][shiftKey] = name;
+            if (!idealPlaced[name]) idealPlaced[name] = [];
+            idealPlaced[name].push(dateStr);
+            console.log(`Placed ${name} on ${dateStr} ${shiftKey}`);
+          }
+        }
+      });
     });
 
-    // STEP 2: Fill remaining shifts with non-ideal staff
-    const getAvailableNonIdealStaff = (dateStr, role) => {
-      const available = [];
-      const vacationExcluded = getVacationExclusions(dateStr);
-      const staffPool = role === 'rn' ? rnNames : paraNames;
-
-      staffPool.forEach(name => {
-        if (this.idealUsers.has(name)) return;
-        if (vacationExcluded.has(name)) return;
-        if (rosterSoFar[name] && rosterSoFar[name].includes(dateStr)) return;
-        available.push(name);
-      });
-
-      return available;
-    };
-
+    // STEP 2: Fill remaining shifts with AVAILABLE staff
+    console.log("STEP 2: Filling remaining shifts...");
+    
     for (let day = 1; day <= daysInMonth; day++) {
       const d = new Date(year, month, day);
       const dateStr = d.toISOString().split('T')[0];
       const roster = this.generatedRoster[dateStr];
 
+      // Fill Para Day if empty
       if (!roster.paraDay) {
-        const available = getAvailableNonIdealStaff(dateStr, 'para');
+        const available = getStaffAvailableForShift(dateStr, 'Day')
+          .filter(name => paraNames.has(name)) // Only paramedics
+          .filter(name => !idealPlaced[name] || !idealPlaced[name].includes(dateStr)); // Not already placed
+        
         if (available.length > 0) {
           roster.paraDay = available[0];
-          if (!rosterSoFar[available[0]]) rosterSoFar[available[0]] = [];
-          rosterSoFar[available[0]].push(dateStr);
+          console.log(`Filled ${dateStr} paraDay with ${available[0]}`);
         }
       }
 
+      // Fill Nurse Day if empty
       if (!roster.nurseDay) {
-        const available = getAvailableNonIdealStaff(dateStr, 'rn');
+        const available = getStaffAvailableForShift(dateStr, 'Day')
+          .filter(name => rnNames.has(name)) // Only nurses
+          .filter(name => !idealPlaced[name] || !idealPlaced[name].includes(dateStr)); // Not already placed
+        
         if (available.length > 0) {
           roster.nurseDay = available[0];
-          if (!rosterSoFar[available[0]]) rosterSoFar[available[0]] = [];
-          rosterSoFar[available[0]].push(dateStr);
+          console.log(`Filled ${dateStr} nurseDay with ${available[0]}`);
         }
       }
 
+      // Fill Para Night if empty
       if (!roster.paraNight) {
-        const available = getAvailableNonIdealStaff(dateStr, 'para');
+        const available = getStaffAvailableForShift(dateStr, 'Night')
+          .filter(name => paraNames.has(name)) // Only paramedics
+          .filter(name => !idealPlaced[name] || !idealPlaced[name].includes(dateStr)); // Not already placed
+        
         if (available.length > 0) {
           roster.paraNight = available[0];
-          if (!rosterSoFar[available[0]]) rosterSoFar[available[0]] = [];
-          rosterSoFar[available[0]].push(dateStr);
+          console.log(`Filled ${dateStr} paraNight with ${available[0]}`);
         }
       }
 
+      // Fill Nurse Night if empty
       if (!roster.nurseNight) {
-        const available = getAvailableNonIdealStaff(dateStr, 'rn');
+        const available = getStaffAvailableForShift(dateStr, 'Night')
+          .filter(name => rnNames.has(name)) // Only nurses
+          .filter(name => !idealPlaced[name] || !idealPlaced[name].includes(dateStr)); // Not already placed
+        
         if (available.length > 0) {
           roster.nurseNight = available[0];
-          if (!rosterSoFar[available[0]]) rosterSoFar[available[0]] = [];
-          rosterSoFar[available[0]].push(dateStr);
+          console.log(`Filled ${dateStr} nurseNight with ${available[0]}`);
         }
       }
     }
 
     // STEP 3: Mark unfilled shifts
+    console.log("STEP 3: Marking unfilled shifts...");
+    
     for (let day = 1; day <= daysInMonth; day++) {
       const d = new Date(year, month, day);
       const dateStr = d.toISOString().split('T')[0];
@@ -1596,13 +1583,17 @@ class StaffScheduleApp {
 
       if (!roster.paraDay || !roster.nurseDay || !roster.paraNight || !roster.nurseNight) {
         roster.conflicts = true;
+        console.log(`${dateStr} has unfilled shifts`);
       }
     }
 
+    // Save to Firebase
     firebase.database().ref("generatedRoster").set(this.generatedRoster);
+    
+    // Render the roster
     this.renderRosterCalendar();
 
-    alert("Roster generated with ideal selections prioritized!");
+    alert("Roster generated! Check browser console (F12) for details. Red cells have conflicts or unfilled shifts.");
   }
 
   updateAvailabilitySummary() {
