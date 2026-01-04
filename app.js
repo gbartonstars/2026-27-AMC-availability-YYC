@@ -1461,9 +1461,13 @@ class StaffScheduleApp {
 
     console.log("=== ROSTER GENERATION START ===");
     console.log("Ideal users:", Array.from(this.idealUsers));
+    console.log("All ideal availability ", this.idealAvailability);
     console.log("Checking ideal availabilities:");
     this.idealUsers.forEach(name => {
       console.log(`  ${name}:`, this.idealAvailability[name] ? Object.keys(this.idealAvailability[name]).length + " entries" : "NOT FOUND");
+      if (this.idealAvailability[name]) {
+        console.log(`    Data for ${name}:`, this.idealAvailability[name]);
+      }
     });
 
     console.log("\nSTEP 1: Placing ideal schedule selections...");
