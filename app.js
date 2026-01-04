@@ -565,14 +565,37 @@ class StaffScheduleApp {
 
       const entry = (this.generatedRoster && this.generatedRoster[dateStr]) || {};
 
+      // Para Day
       const pd = document.createElement('div');
-      pd.textContent = `Para Day: ${entry.paraDay || '-'}`;
+      pd.classList.add('roster-cell');
+      pd.dataset.date = dateStr;
+      pd.dataset.shift = 'paraDay';
+      pd.textContent = entry.paraDay || '-';
+      dayCell.appendChild(pd);
+
+      // Nurse Day
       const nd = document.createElement('div');
-      nd.textContent = `Nurse Day: ${entry.nurseDay || '-'}`;
+      nd.classList.add('roster-cell');
+      nd.dataset.date = dateStr;
+      nd.dataset.shift = 'nurseDay';
+      nd.textContent = entry.nurseDay || '-';
+      dayCell.appendChild(nd);
+
+      // Para Night
       const pn = document.createElement('div');
-      pn.textContent = `Para Night: ${entry.paraNight || '-'}`;
+      pn.classList.add('roster-cell');
+      pn.dataset.date = dateStr;
+      pn.dataset.shift = 'paraNight';
+      pn.textContent = entry.paraNight || '-';
+      dayCell.appendChild(pn);
+
+      // Nurse Night
       const nn = document.createElement('div');
-      nn.textContent = `Nurse Night: ${entry.nurseNight || '-'}`;
+      nn.classList.add('roster-cell');
+      nn.dataset.date = dateStr;
+      nn.dataset.shift = 'nurseNight';
+      nn.textContent = entry.nurseNight || '-';
+      dayCell.appendChild(nn);
 
       dayCell.appendChild(pd);
       dayCell.appendChild(nd);
