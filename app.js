@@ -8,7 +8,7 @@ class StaffScheduleApp {
   "Greg Barton",      // 👈 Feature access ONLY
   "Scott McTaggart", 
   "Graham Newton"
-]);
+]),
 
 this.idealUsers = new Set([  // 👈 KEEP - Roster priority + ideal tab
   "Greg Barton",
@@ -1096,40 +1096,11 @@ this.idealUsers = new Set([  // 👈 KEEP - Roster priority + ideal tab
     return { rnDay, rnNight, paraDay, paraNight };
   }
 
-  getVacationTotals(startDate, endDate) {
-    // Count Day 'V' and Night 'V' as separate vacation shifts
-    const totals = {}; // name -> count
-
-    const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-    const end   = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-
-    Object.keys(this.allAvailability || {}).forEach(name => {
-      const days = this.allAvailability[name] || {};
-      let count = 0;
-
-      Object.keys(days).forEach(dateStr => {
-        const d = new Date(dateStr);
-        if (isNaN(d)) return;
-        if (d < start || d > end) return;
-
-        const entry = days[dateStr];
-        if (!entry) return;
-
-        if (entry.Day === 'V') count += 1;
-        if (entry.Night === 'V') count += 1;
-      });
-
-      if (count > 0) {
-        totals[name] = count;
-      }
-    });
-
-    return totals;
-  }
-
   showVacationSummary(mode) {
-    if (!this.currentStaff ||
-        !["Greg Barton","Scott McTaggart","Graham Newton","Dave Allison"].includes(this.currentStaff)) {
+    if (
+      !this.currentStaff ||
+      !["Greg Barton","Scott McTaggart","Graham Newton","Dave Allison"].includes(this.currentStaff)
+    ) {
       alert("Vacation summary is only available to Greg, Scott, Graham, or Dave.");
       return;
     }
@@ -1140,26 +1111,24 @@ this.idealUsers = new Set([  // 👈 KEEP - Roster priority + ideal tab
     let start, end, title;
 
     if (mode === 'month') {
-      // Use current visible month on main schedule
       const year  = this.currentDate.getFullYear();
       const month = this.currentDate.getMonth();
       start = new Date(year, month, 1);
       end   = new Date(year, month + 1, 0);
       title = `Vacation for ${this.monthNames[month]} ${year}`;
     } else {
-      // Fiscal year: April 1 to March 31 containing currentDate
       const curYear  = this.currentDate.getFullYear();
-      const curMonth = this.currentDate.getMonth(); // 0=Jan
+      const curMonth = this.currentDate.getMonth();
       let fyStartYear, fyEndYear;
-      if (curMonth >= 3) {        // April (3) or later => FY starts this year
+      if (curMonth >= 3) {
         fyStartYear = curYear;
         fyEndYear   = curYear + 1;
-      } else {                    // Jan–Mar => FY started last year
+      } else {
         fyStartYear = curYear - 1;
         fyEndYear   = curYear;
       }
-      start = new Date(fyStartYear, 3, 1);  // April 1
-      end   = new Date(fyEndYear, 2, 31);   // March 31
+      start = new Date(fyStartYear, 3, 1);
+      end   = new Date(fyEndYear, 2, 31);
       title = `Vacation for Fiscal Year ${fyStartYear}-${fyEndYear}`;
     }
 
@@ -1171,12 +1140,18 @@ this.idealUsers = new Set([  // 👈 KEEP - Roster priority + ideal tab
       return;
     }
 
-    let html = `<strong>${title}</strong><br>`;
+    let html = `${title}:<br>`;
     names.forEach(name => {
-      html += `${name}: ${totals[name]} vacation shifts<br>`;
+      html += `${name}: ${totals[name]} shifts<br>`;
     });
     outEl.innerHTML = html;
   }
+
+} // END OF CLASS StaffScheduleApp
+
+window.onload = () => {
+  new StaffScheduleApp();
+};
 
   // Helper: compute per-staff adjusted caps for the current roster month
   getMonthlyCapsForCurrentMonth() {
