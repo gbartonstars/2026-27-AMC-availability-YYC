@@ -596,12 +596,7 @@ class StaffScheduleApp {
       nn.dataset.shift = 'nurseNight';
       nn.textContent = entry.nurseNight || '-';
       dayCell.appendChild(nn);
-
-      dayCell.appendChild(pd);
-      dayCell.appendChild(nd);
-      dayCell.appendChild(pn);
-      dayCell.appendChild(nn);
-
+      
       calendarEl.appendChild(dayCell);
     }
   }
