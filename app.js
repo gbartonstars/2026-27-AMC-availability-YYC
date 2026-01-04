@@ -1322,10 +1322,11 @@ class StaffScheduleApp {
         }
       });
 
-      // Helper: choose staff for a role+shift
+      // Helper: IDEAL SCHEDULE FIRST FRAMEWORK
       const pickStaff = (role, shift) => {
         let best = null;
         let bestScore = -1;
+        const targetIdeal = shift === 'Day' ? 'D' : 'N';
 
         allNames.forEach(name => {
           const roleType = this.getRoleForStaff(name);
@@ -1335,26 +1336,23 @@ class StaffScheduleApp {
           if (!capInfo || capInfo.used >= capInfo.cap) return;
 
           const entry = entryByName[name];
-          if (!entry) return;
+          if (!entry || (entry[shift] !== 'A' && entry[shift] !== '')) return;
 
-          const availVal = entry[shift];
-          if (availVal !== 'A' && availVal !== '') return; // only A or empty
-
-          // Prevent double-shift based on assignments already made
           if (wouldBeDoubleShift(name, dateStr, role, shift)) return;
 
           const idealEntry = getIdealEntry(name, dateStr);
           const idealVal = idealEntry ? idealEntry[shift] : '';
-          let score = 1;
+          
+          let score = 0;
 
-          // Ideal schedule priority
-          if ((shift === 'Day' && idealVal === 'D') ||
-              (shift === 'Night' && idealVal === 'N')) {
-            score += 3; // stronger weight than before
-          }
-
-          // Light fairness: fewer used shifts preferred
+          // PRIORITY 1: Matches ideal (10pts = framework)
+          if (idealVal === targetIdeal) score += 10;
+          // PRIORITY 2: Available (5pts base)
+          score += 5;
+          // PRIORITY 3: Fairness
           score += (1.0 / (capInfo.used + 1));
+          // TIEBREAKER: Ideal users
+          if (this.idealUsers.has(name)) score += 0.5;
 
           if (score > bestScore) {
             bestScore = score;
@@ -1362,9 +1360,7 @@ class StaffScheduleApp {
           }
         });
 
-        if (best) {
-          caps[best].used += 1;
-        }
+        if (best) caps[best].used += 1;
         return best;
       };
 
