@@ -1238,9 +1238,9 @@ class StaffScheduleApp {
 
   // Generate roster for the current roster month (ideal-aware, no double shifts)
   onGenerateRoster() {
-    if (!this.currentStaff || this.currentStaff !== "Greg Barton") {
-      alert("Only Greg can generate the roster.");
-      return;
+  if (!this.currentStaff || !this.privilegedUsers.has(this.currentStaff)) {
+    alert("Only privileged users can generate rosters.");
+    return;
     }
 
     const year  = this.rosterDate.getFullYear();
