@@ -1605,8 +1605,8 @@ class StaffScheduleApp {
       summaryDiv.classList.add('highlight-green');
     }
   }
-}
-renderEditableRoster() {
+
+  renderEditableRoster() {
     if (!this.privilegedUsers.has(this.currentStaff)) return;
     document.querySelectorAll('.roster-cell').forEach(cell => {
       const dateStr = cell.dataset.date;
@@ -1631,6 +1631,7 @@ renderEditableRoster() {
       cell.appendChild(select);
     });
   }
+}
 
 window.onload = () => {
   new StaffScheduleApp();
