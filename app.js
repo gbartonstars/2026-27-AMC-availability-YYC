@@ -1578,6 +1578,16 @@ if (this.idealUsers.has(name) &&
       summaryDiv.classList.add('highlight-green');
     }
   }
+
+  updateAvailabilitySummary() {
+    const el = document.getElementById('availabilitySummary');
+    if (el) el.textContent = 'Availability summary ready';
+  }
+
+  renderCalendar() {
+    const el = document.getElementById('calendar');
+    if (el) el.innerHTML = '<div>Calendar renders here</div>';
+  }
 }
 
 window.onload = () => {
