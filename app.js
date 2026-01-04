@@ -1359,9 +1359,7 @@ this.idealUsers = new Set([  // 👈 KEEP - Roster priority + ideal tab
 
           // Prevent double-shift based on assignments already made
           if (wouldBeDoubleShift(name, dateStr, role, shift)) return;
-
-          const idealEntry = getIdealEntry(name, dateStr);
-          const idealVal = idealEntry ? idealEntry[shift] : '';
+          
           let score = getVacationScore(name);
 
 
