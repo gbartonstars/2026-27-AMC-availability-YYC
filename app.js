@@ -1578,14 +1578,14 @@ class StaffScheduleApp {
           };
           minimum = map31[name] ?? 0;
         }
-     } else {
+      } else {
         // Jan–Mar: fall back to original tables
         if (daysInMonth === 30 || daysInMonth === 28) {
           minimum = this.minimumRequired30[name] || 0;
         } else if (daysInMonth === 31) {
           minimum = this.minimumRequired31[name] || 0;
         }
-      } 
+      }
     }
 
     const requiredAdjusted = minimum * 2;
