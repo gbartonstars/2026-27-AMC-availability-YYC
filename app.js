@@ -1461,7 +1461,17 @@ class StaffScheduleApp {
         conflicts: false
       };
     }
-
+// DEBUG: Check what data we actually have
+    console.log("DEBUG: idealUsers set:", this.idealUsers);
+    console.log("DEBUG: idealAvailability object:", this.idealAvailability);
+    console.log("DEBUG: allAvailability object keys:", Object.keys(this.allAvailability || {}));
+    
+    // Check if Stuart is in idealAvailability
+    if (this.idealAvailability['Stuart Grant']) {
+      console.log("Stuart Grant found in idealAvailability:", this.idealAvailability['Stuart Grant']);
+    } else {
+      console.log("Stuart Grant NOT found in idealAvailability");
+    }
     console.log("=== ROSTER GENERATION START ===");
     console.log("Ideal users:", Array.from(this.idealUsers));
     console.log("All ideal availability ", this.idealAvailability);
