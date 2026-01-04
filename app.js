@@ -548,7 +548,6 @@ class StaffScheduleApp {
       calendarEl.appendChild(blankCell);
     }
 
-    // Helper to get staff available for a specific shift
     const getAvailableForShift = (dateStr, shiftType) => {
       const available = [];
       const rnNames = new Set([
@@ -569,7 +568,6 @@ class StaffScheduleApp {
         const staffDays = this.allAvailability[name] || {};
         const entry = staffDays[dateStr];
         
-        // Check if they have availability marked (anything except 'V' vacation)
         if (entry && entry[shiftType] && entry[shiftType] !== 'V') {
           available.push(name);
         }
@@ -578,7 +576,10 @@ class StaffScheduleApp {
       return available.sort();
     };
 
-    // Render each day
+    if (!this.generatedRoster) {
+      this.generatedRoster = {};
+    }
+
     for (let day = 1; day <= daysInMonth; day++) {
       const d = new Date(year, month, day);
       const dateStr = d.toISOString().split('T')[0];
@@ -594,22 +595,30 @@ class StaffScheduleApp {
       dateLabel.textContent = day;
       dayCell.appendChild(dateLabel);
 
-      const entry = (this.generatedRoster && this.generatedRoster[dateStr]) || {};
+      if (!this.generatedRoster[dateStr]) {
+        this.generatedRoster[dateStr] = {
+          paraDay: null,
+          nurseDay: null,
+          paraNight: null,
+          nurseNight: null,
+          conflicts: false
+        };
+      }
 
-      // Highlight conflicts in red
+      const entry = this.generatedRoster[dateStr];
+
       if (entry.conflicts) {
         dayCell.style.backgroundColor = '#ffcccc';
         dayCell.style.borderColor = '#ff0000';
         dayCell.style.borderWidth = '2px';
       }
 
-      // Create a container for dropdowns
       const shiftsContainer = document.createElement('div');
       shiftsContainer.style.display = 'flex';
       shiftsContainer.style.flexDirection = 'column';
       shiftsContainer.style.gap = '4px';
 
-      // Para Day Shift
+      // Para Day
       const pdSelect = document.createElement('select');
       pdSelect.style.width = '100%';
       pdSelect.style.padding = '4px';
@@ -625,7 +634,7 @@ class StaffScheduleApp {
         const option = document.createElement('option');
         option.value = name;
         option.textContent = name;
-        option.style.backgroundColor = '#90EE90'; // Green for available
+        option.style.backgroundColor = '#90EE90';
         option.style.fontWeight = 'bold';
         option.style.color = '#000';
         pdSelect.appendChild(option);
@@ -634,7 +643,7 @@ class StaffScheduleApp {
       pdSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraDay', e.target.value));
       shiftsContainer.appendChild(pdSelect);
 
-      // Nurse Day Shift
+      // Nurse Day
       const ndSelect = document.createElement('select');
       ndSelect.style.width = '100%';
       ndSelect.style.padding = '4px';
@@ -650,7 +659,7 @@ class StaffScheduleApp {
         const option = document.createElement('option');
         option.value = name;
         option.textContent = name;
-        option.style.backgroundColor = '#90EE90'; // Green for available
+        option.style.backgroundColor = '#90EE90';
         option.style.fontWeight = 'bold';
         option.style.color = '#000';
         ndSelect.appendChild(option);
@@ -659,7 +668,7 @@ class StaffScheduleApp {
       ndSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseDay', e.target.value));
       shiftsContainer.appendChild(ndSelect);
 
-      // Para Night Shift
+      // Para Night
       const pnSelect = document.createElement('select');
       pnSelect.style.width = '100%';
       pnSelect.style.padding = '4px';
@@ -675,7 +684,7 @@ class StaffScheduleApp {
         const option = document.createElement('option');
         option.value = name;
         option.textContent = name;
-        option.style.backgroundColor = '#90EE90'; // Green for available
+        option.style.backgroundColor = '#90EE90';
         option.style.fontWeight = 'bold';
         option.style.color = '#000';
         pnSelect.appendChild(option);
@@ -684,7 +693,7 @@ class StaffScheduleApp {
       pnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraNight', e.target.value));
       shiftsContainer.appendChild(pnSelect);
 
-      // Nurse Night Shift
+      // Nurse Night
       const nnSelect = document.createElement('select');
       nnSelect.style.width = '100%';
       nnSelect.style.padding = '4px';
@@ -700,7 +709,7 @@ class StaffScheduleApp {
         const option = document.createElement('option');
         option.value = name;
         option.textContent = name;
-        option.style.backgroundColor = '#90EE90'; // Green for available
+        option.style.backgroundColor = '#90EE90';
         option.style.fontWeight = 'bold';
         option.style.color = '#000';
         nnSelect.appendChild(option);
@@ -743,6 +752,7 @@ class StaffScheduleApp {
     }
     this.generatedRoster[dateStr][shift] = name || null;
     firebase.database().ref("generatedRoster").set(this.generatedRoster);
+    console.log(`Updated ${dateStr} ${shift} to ${name}`);
   }
 
   renderCalendar() {
@@ -1420,7 +1430,6 @@ class StaffScheduleApp {
       "John Doyle","Bob Odney"
     ]);
 
-    // Get staff who have ANY availability marked (not vacation) for a shift
     const getStaffAvailableForShift = (dateStr, shiftType) => {
       const available = [];
       
@@ -1428,7 +1437,6 @@ class StaffScheduleApp {
         const staffDays = this.allAvailability[name] || {};
         const entry = staffDays[dateStr];
         
-        // If they marked anything other than 'V' (vacation), they're available
         if (entry && entry[shiftType] && entry[shiftType] !== 'V') {
           available.push(name);
         }
@@ -1437,7 +1445,6 @@ class StaffScheduleApp {
       return available;
     };
 
-    // Initialize roster
     for (let day = 1; day <= daysInMonth; day++) {
       const d = new Date(year, month, day);
       const dateStr = d.toISOString().split('T')[0];
@@ -1451,9 +1458,12 @@ class StaffScheduleApp {
     }
 
     console.log("=== ROSTER GENERATION START ===");
-    console.log("Ideal users:", this.idealUsers);
+    console.log("Ideal users:", Array.from(this.idealUsers));
+    console.log("Checking ideal availabilities:");
+    this.idealUsers.forEach(name => {
+      console.log(`  ${name}:`, this.idealAvailability[name] ? Object.keys(this.idealAvailability[name]).length + " entries" : "NOT FOUND");
+    });
 
-    // STEP 1: Place ideal schedule selections
     console.log("\nSTEP 1: Placing ideal schedule selections...");
     
     const idealPlaced = {};
@@ -1470,13 +1480,12 @@ class StaffScheduleApp {
         
         const entry = staffIdeal[dateStr] || {};
         
-        // Place Day shift
         if (entry.Day === 'D') {
           const shiftKey = isRN ? 'nurseDay' : 'paraDay';
           
           if (this.generatedRoster[dateStr][shiftKey]) {
             this.generatedRoster[dateStr].conflicts = true;
-            console.log(`  ⚠️ CONFLICT on ${dateStr} ${shiftKey}`);
+            console.log(`  ⚠️ CONFLICT on ${dateStr} ${shiftKey}: ${this.generatedRoster[dateStr][shiftKey]} and ${name}`);
           } else {
             this.generatedRoster[dateStr][shiftKey] = name;
             if (!idealPlaced[name]) idealPlaced[name] = [];
@@ -1485,13 +1494,12 @@ class StaffScheduleApp {
           }
         }
         
-        // Place Night shift
         if (entry.Night === 'N') {
           const shiftKey = isRN ? 'nurseNight' : 'paraNight';
           
           if (this.generatedRoster[dateStr][shiftKey]) {
             this.generatedRoster[dateStr].conflicts = true;
-            console.log(`  ⚠️ CONFLICT on ${dateStr} ${shiftKey}`);
+            console.log(`  ⚠️ CONFLICT on ${dateStr} ${shiftKey}: ${this.generatedRoster[dateStr][shiftKey]} and ${name}`);
           } else {
             this.generatedRoster[dateStr][shiftKey] = name;
             if (!idealPlaced[name]) idealPlaced[name] = [];
@@ -1502,7 +1510,6 @@ class StaffScheduleApp {
       });
     });
 
-    // STEP 2: Fill remaining shifts
     console.log("\nSTEP 2: Filling remaining shifts...");
     
     for (let day = 1; day <= daysInMonth; day++) {
@@ -1510,7 +1517,6 @@ class StaffScheduleApp {
       const dateStr = d.toISOString().split('T')[0];
       const roster = this.generatedRoster[dateStr];
 
-      // Fill Para Day
       if (!roster.paraDay) {
         const available = getStaffAvailableForShift(dateStr, 'Day')
           .filter(name => paraNames.has(name))
@@ -1524,7 +1530,6 @@ class StaffScheduleApp {
         }
       }
 
-      // Fill Nurse Day
       if (!roster.nurseDay) {
         const available = getStaffAvailableForShift(dateStr, 'Day')
           .filter(name => rnNames.has(name))
@@ -1538,7 +1543,6 @@ class StaffScheduleApp {
         }
       }
 
-      // Fill Para Night
       if (!roster.paraNight) {
         const available = getStaffAvailableForShift(dateStr, 'Night')
           .filter(name => paraNames.has(name))
@@ -1552,7 +1556,6 @@ class StaffScheduleApp {
         }
       }
 
-      // Fill Nurse Night
       if (!roster.nurseNight) {
         const available = getStaffAvailableForShift(dateStr, 'Night')
           .filter(name => rnNames.has(name))
@@ -1567,7 +1570,6 @@ class StaffScheduleApp {
       }
     }
 
-    // STEP 3: Mark unfilled
     console.log("\nSTEP 3: Checking for unfilled shifts...");
     
     for (let day = 1; day <= daysInMonth; day++) {
@@ -1588,7 +1590,18 @@ class StaffScheduleApp {
 
     alert("Roster generated! Check browser console (F12) for detailed log.");
   }
-
+loadRosterFromFirebase() {
+    firebase.database().ref("generatedRoster").on('value', (snapshot) => {
+      if (snapshot.exists()) {
+        this.generatedRoster = snapshot.val();
+        console.log("✓ Roster loaded from Firebase");
+        this.renderRosterCalendar();
+      } else {
+        this.generatedRoster = {};
+        console.log("No roster found in Firebase");
+      }
+    });
+  }
   updateAvailabilitySummary() {
     if (this.isOverviewMode) {
       const summary = document.getElementById('availabilitySummary');
