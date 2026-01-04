@@ -1263,159 +1263,173 @@ class StaffScheduleApp {
 
   // Generate roster for the current roster month (ideal-aware, no double shifts)
   onGenerateRoster() {
-  if (!this.currentStaff || !this.privilegedUsers.has(this.currentStaff)) {
-    alert("Only privileged users can generate rosters.");
-    return;
-    }
+    if (!this.currentStaff || !this.privilegedUsers.has(this.currentStaff)) return;
 
-    const year  = this.rosterDate.getFullYear();
+    const year = this.rosterDate.getFullYear();
     const month = this.rosterDate.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    const caps = this.getMonthlyCapsForCurrentMonth();  // name -> { cap, used, vacations }
-    // Reset for fresh generation every button press
-  Object.values(caps).forEach(cap => cap.used = 0);
-    const newRoster = { ...(this.generatedRoster || {}) };
+    this.generatedRoster = {};
 
-    const getAvailEntry = (name, dateStr) =>
-      (this.allAvailability[name] && this.allAvailability[name][dateStr]) || null;
-    const getIdealEntry = (name, dateStr) =>
-      (this.idealAvailability[name] && this.idealAvailability[name][dateStr]) || null;
+    const rnNames = new Set([
+      "Graham Newton","Stuart Grant","Kris Austin",
+      "Kellie Ann Vogelaar","Janice Kirkham",
+      "Flo Butler","Jodi Scott","Carolyn Hogan","Michelle Sexsmith"
+    ]);
 
-    const allNames = Object.keys(this.allAvailability || {});
+    const paraNames = new Set([
+      "Greg Barton","Scott McTaggart","Dave Allison",
+      "Mackenzie Wardle","Chad Hegge","Ken King",
+      "John Doyle","Bob Odney"
+    ]);
 
-    // helper: check if assigning this shift would cause a double shift
-    const wouldBeDoubleShift = (name, dateStr, role, shift) => {
-      const thisDay = newRoster[dateStr] || {};
-
-      // Same-day double: Day+Night or Night+Day for same role
-      if (shift === 'Day') {
-        if ((role === 'para'  && thisDay.paraNight  === name) ||
-            (role === 'rn'    && thisDay.nurseNight === name)) {
-          return true;
+    const getVacationExclusions = (dateStr) => {
+      const excluded = new Set();
+      Object.keys(this.allAvailability).forEach(name => {
+        const staffDays = this.allAvailability[name] || {};
+        const entry = staffDays[dateStr];
+        if (entry && (entry.Day === 'V' || entry.Night === 'V')) {
+          excluded.add(name);
         }
-      } else if (shift === 'Night') {
-        if ((role === 'para'  && thisDay.paraDay  === name) ||
-            (role === 'rn'    && thisDay.nurseDay === name)) {
-          return true;
-        }
-      }
-
-      // Night then next-day Day
-      if (shift === 'Day') {
-        const d = new Date(dateStr);
-        const prevDateStr = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1)
-          .toISOString().split('T')[0];
-        const prevDay = newRoster[prevDateStr] || {};
-        if ((role === 'para'  && prevDay.paraNight  === name) ||
-            (role === 'rn'    && prevDay.nurseNight === name)) {
-          return true;
-        }
-      }
-
-      return false;
+      });
+      return excluded;
     };
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateObj = new Date(year, month, day);
-      const dateStr = dateObj.toISOString().split('T')[0];
+    // Build ideal schedule map for this month
+    const idealMap = {}; // dateStr -> { Day: name, Night: name, conflict: boolean }
+    this.idealUsers.forEach(name => {
+      const staffIdeal = this.idealAvailability[name] || {};
+      for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(year, month, day);
+        const dateStr = d.toISOString().split('T')[0];
+        if (!idealMap[dateStr]) idealMap[dateStr] = { Day: null, Night: null, conflict: false };
 
-      if (!newRoster[dateStr]) {
-        newRoster[dateStr] = {
-          paraDay: null,
-          nurseDay: null,
-          paraNight: null,
-          nurseNight: null
-        };
-      }
-
-      const entryByName = {};
-      allNames.forEach(name => {
-        entryByName[name] = getAvailEntry(name, dateStr);
-      });
-
-      // Mark vacations in the DAY roster (one per role if present)
-      allNames.forEach(name => {
-        const entry = entryByName[name];
-        if (!entry || entry.Day !== 'V') return;
-
-        const role = this.getRoleForStaff(name);
-        if (!role) return;
-
-        if (role === 'para' && !newRoster[dateStr].paraDay) {
-          newRoster[dateStr].paraDay = `${name} (Vacation)`;
-        } else if (role === 'rn' && !newRoster[dateStr].nurseDay) {
-          newRoster[dateStr].nurseDay = `${name} (Vacation)`;
-        }
-      });
-
-      // Helper: IDEAL SCHEDULE FIRST FRAMEWORK
-      const pickStaff = (role, shift) => {
-        let best = null;
-        let bestScore = -1;
-        const targetIdeal = shift === 'Day' ? 'D' : 'N';
-
-        allNames.forEach(name => {
-          const roleType = this.getRoleForStaff(name);
-          if (roleType !== role) return;
-
-          const capInfo = caps[name];
-          if (!capInfo || capInfo.used >= capInfo.cap) return;
-
-          const entry = entryByName[name];
-          if (!entry || entry[shift] !== 'A') return;  // Vacation BLOCKS all shifts
-
-          if (wouldBeDoubleShift(name, dateStr, role, shift)) return;
-
-          const idealEntry = getIdealEntry(name, dateStr);
-          const idealVal = idealEntry ? idealEntry[shift] : '';
-          
-          let score = 0;
-
-          // PRIORITY 1: Matches ideal (10pts = framework)
-          if (idealVal === targetIdeal) score += 10;
-          // PRIORITY 2: Available (5pts base)
-          score += 5;
-          // PRIORITY 3: Fairness
-          score += (1.0 / (capInfo.used + 1));
-          // TIEBREAKER: Ideal users
-          if (this.idealUsers.has(name)) score += 0.5;
-
-          if (score > bestScore) {
-            bestScore = score;
-            best = name;
+        const entry = staffIdeal[dateStr] || {};
+        if (entry.Day === 'D') {
+          if (idealMap[dateStr].Day && idealMap[dateStr].Day !== name) {
+            idealMap[dateStr].conflict = true;
           }
-        });
+          idealMap[dateStr].Day = name;
+        }
+        if (entry.Night === 'N') {
+          if (idealMap[dateStr].Night && idealMap[dateStr].Night !== name) {
+            idealMap[dateStr].conflict = true;
+          }
+          idealMap[dateStr].Night = name;
+        }
+      }
+    });
 
-        if (best) caps[best].used += 1;
-        return best;
+    // Get available NON-IDEAL staff (not on vacation) for a specific shift
+    const getAvailableNonIdealStaff = (dateStr, role) => {
+      const available = [];
+      const vacationExcluded = getVacationExclusions(dateStr);
+      const staffPool = role === 'rn' ? rnNames : paraNames;
+
+      staffPool.forEach(name => {
+        if (this.idealUsers.has(name)) return; // Skip ideal users - they're only for their selections
+        if (vacationExcluded.has(name)) return; // Skip if on vacation
+        available.push(name);
+      });
+
+      return available;
+    };
+
+    // Initialize roster for each day
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      const dateStr = d.toISOString().split('T')[0];
+      this.generatedRoster[dateStr] = {
+        paraDay: null,
+        nurseDay: null,
+        paraNight: null,
+        nurseNight: null,
+        conflicts: false
       };
-
-      // Fill day shift, but do not overwrite vacation markers
-      if (!newRoster[dateStr].paraDay) {
-        const pDay = pickStaff('para', 'Day');
-        if (pDay) newRoster[dateStr].paraDay = pDay;
-      }
-      if (!newRoster[dateStr].nurseDay) {
-        const nDay = pickStaff('rn', 'Day');
-        if (nDay) newRoster[dateStr].nurseDay = nDay;
-      }
-
-      // Fill night shift
-      const pNight = pickStaff('para', 'Night');
-      if (pNight) newRoster[dateStr].paraNight = pNight;
-      const nNight = pickStaff('rn', 'Night');
-      if (nNight) newRoster[dateStr].nurseNight = nNight;
     }
 
-    this.generatedRoster = newRoster;
-    firebase.database().ref("generatedRoster").set(newRoster);
+    // Step 1: Place ideal schedule assignments first (with conflict detection)
+    Object.keys(idealMap).forEach(dateStr => {
+      const ideal = idealMap[dateStr];
 
-    alert("Roster regenerated!");
+      if (ideal.conflict) {
+        this.generatedRoster[dateStr].conflicts = true;
+      }
+
+      // Only place ideal users for shifts they SELECTED
+      if (ideal.Day && !ideal.conflict) {
+        const name = ideal.Day;
+        if (rnNames.has(name)) {
+          this.generatedRoster[dateStr].nurseDay = name;
+        } else if (paraNames.has(name)) {
+          this.generatedRoster[dateStr].paraDay = name;
+        }
+      }
+
+      if (ideal.Night && !ideal.conflict) {
+        const name = ideal.Night;
+        if (rnNames.has(name)) {
+          this.generatedRoster[dateStr].nurseNight = name;
+        } else if (paraNames.has(name)) {
+          this.generatedRoster[dateStr].paraNight = name;
+        }
+      }
+    });
+
+    // Step 2: Fill remaining shifts ONLY with non-ideal staff
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      const dateStr = d.toISOString().split('T')[0];
+      const roster = this.generatedRoster[dateStr];
+
+      // Fill paraDay if empty (use non-ideal staff only)
+      if (!roster.paraDay) {
+        const available = getAvailableNonIdealStaff(dateStr, 'para');
+        if (available.length > 0) {
+          roster.paraDay = available[0];
+        }
+      }
+
+      // Fill nurseDay if empty (use non-ideal staff only)
+      if (!roster.nurseDay) {
+        const available = getAvailableNonIdealStaff(dateStr, 'rn');
+        if (available.length > 0) {
+          roster.nurseDay = available[0];
+        }
+      }
+
+      // Fill paraNight if empty (use non-ideal staff only)
+      if (!roster.paraNight) {
+        const available = getAvailableNonIdealStaff(dateStr, 'para');
+        if (available.length > 0) {
+          roster.paraNight = available[0];
+        }
+      }
+
+      // Fill nurseNight if empty (use non-ideal staff only)
+      if (!roster.nurseNight) {
+        const available = getAvailableNonIdealStaff(dateStr, 'rn');
+        if (available.length > 0) {
+          roster.nurseNight = available[0];
+        }
+      }
+    }
+
+    // Step 3: Detect unfilled shifts and mark for highlighting
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      const dateStr = d.toISOString().split('T')[0];
+      const roster = this.generatedRoster[dateStr];
+
+      if (!roster.paraDay || !roster.nurseDay || !roster.paraNight || !roster.nurseNight) {
+        roster.conflicts = true;
+      }
+    }
+
+    firebase.database().ref("generatedRoster").set(this.generatedRoster);
     this.renderRosterCalendar();
-    if (this.privilegedUsers.has(this.currentStaff)) {
-      setTimeout(() => this.renderEditableRoster(), 100);
-    }
+
+    alert("Roster generated! Red-highlighted days have conflicts or unfilled shifts. Ideal users are ONLY scheduled for their selected shifts.");
   }
 
   updateAvailabilitySummary() {
