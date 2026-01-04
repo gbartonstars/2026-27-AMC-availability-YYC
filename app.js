@@ -565,6 +565,13 @@ class StaffScheduleApp {
 
       const entry = (this.generatedRoster && this.generatedRoster[dateStr]) || {};
 
+      // Highlight conflicts/unfilled shifts in red
+      if (entry.conflicts) {
+        dayCell.style.backgroundColor = '#ffcccc';
+        dayCell.style.borderColor = '#ff0000';
+        dayCell.style.borderWidth = '2px';
+      }
+
       // Para Day
       const pd = document.createElement('div');
       pd.classList.add('roster-cell');
