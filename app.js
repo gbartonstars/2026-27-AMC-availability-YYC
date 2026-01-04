@@ -1248,6 +1248,8 @@ class StaffScheduleApp {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const caps = this.getMonthlyCapsForCurrentMonth();  // name -> { cap, used, vacations }
+    // Reset for fresh generation every button press
+  Object.values(caps).forEach(cap => cap.used = 0);
     const newRoster = { ...(this.generatedRoster || {}) };
 
     const getAvailEntry = (name, dateStr) =>
@@ -1336,7 +1338,7 @@ class StaffScheduleApp {
           if (!capInfo || capInfo.used >= capInfo.cap) return;
 
           const entry = entryByName[name];
-          if (!entry || (entry[shift] !== 'A' && entry[shift] !== '')) return;
+          if (!entry || entry[shift] !== 'A') return;  // Vacation BLOCKS all shifts
 
           if (wouldBeDoubleShift(name, dateStr, role, shift)) return;
 
@@ -1384,8 +1386,11 @@ class StaffScheduleApp {
     this.generatedRoster = newRoster;
     firebase.database().ref("generatedRoster").set(newRoster);
 
-    alert("Smarter roster generated (Ideal priority, no double shifts).");
+    alert("Roster regenerated!");
     this.renderRosterCalendar();
+    if (this.privilegedUsers.has(this.currentStaff)) {
+      setTimeout(() => this.renderEditableRoster(), 100);
+    }
   }
 
   updateAvailabilitySummary() {
@@ -1583,6 +1588,31 @@ class StaffScheduleApp {
     }
   }
 }
+renderEditableRoster() {
+    if (!this.privilegedUsers.has(this.currentStaff)) return;
+    document.querySelectorAll('.roster-cell').forEach(cell => {
+      const dateStr = cell.dataset.date;
+      const shift = cell.dataset.shift;
+      const role = shift.includes('para') ? 'para' : 'rn';
+      const select = document.createElement('select');
+      select.innerHTML = '<option value="">-- Unassigned --</option>';
+      Object.keys(this.allAvailability).forEach(name => {
+        const staffRole = this.getRoleForStaff(name);
+        if (staffRole === role) {
+          select.innerHTML += `<option value="${name}" ${this.generatedRoster?.[dateStr]?.[shift] === name ? 'selected' : ''}>${name}</option>`;
+        }
+      });
+      select.onchange = () => {
+        if (this.generatedRoster) {
+          this.generatedRoster[dateStr][shift] = select.value || null;
+          firebase.database().ref("generatedRoster").set(this.generatedRoster);
+          this.renderRosterCalendar();
+        }
+      };
+      cell.innerHTML = '';
+      cell.appendChild(select);
+    });
+  }
 
 window.onload = () => {
   new StaffScheduleApp();
