@@ -407,6 +407,8 @@ class StaffScheduleApp {
     }
 
     this.currentDate = newDate;
+    this.rosterDate = newDate;
+    this.loadRosterFromFirebase();
     this.showSchedule();
   }
 
