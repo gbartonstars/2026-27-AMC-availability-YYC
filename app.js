@@ -1437,15 +1437,12 @@ class StaffScheduleApp {
     "John Doyle","Bob Odney"
   ]);
 
-  // Staff whose vacation DOES reduce their monthly requirements
-  // EVERYONE EXCEPT: Dave Allison, Bob Odney, Chad Hegge, Kellie Ann Vogelaar
   const vacationAdjustableStaff = new Set([
     "Greg Barton", "Scott McTaggart", "Mackenzie Wardle", "Ken King",
     "Graham Newton", "Stuart Grant", "Kris Austin", "Janice Kirkham",
     "Flo Butler", "Jodi Scott", "Carolyn Hogan", "Michelle Sexsmith", "John Doyle"
   ]);
 
-  // ===== STEP 0: Calculate adjusted minimum requirements (vacation-aware) =====
   console.log("\n=== STEP 0: Calculate Adjusted Minimum Requirements ===");
   
   const requirementsTable = daysInMonth === 30 ? this.minimumRequired30 : this.minimumRequired31;
@@ -1455,7 +1452,6 @@ class StaffScheduleApp {
     let baseRequired = requirementsTable[name] || 0;
     let vacationDays = 0;
 
-    // Count vacation days for this person in this month
     if (vacationAdjustableStaff.has(name) && this.allAvailability[name]) {
       const staffDays = this.allAvailability[name];
       for (let day = 1; day <= daysInMonth; day++) {
@@ -1481,12 +1477,9 @@ class StaffScheduleApp {
 
     if (vacationDays > 0 && vacationAdjustableStaff.has(name)) {
       console.log(`  ${name}: ${baseRequired} - ${vacationDays} vacation = ${adjustedRequired} required`);
-    } else if (vacationDays > 0 && !vacationAdjustableStaff.has(name)) {
-      console.log(`  ${name}: ${baseRequired} required (vacation NOT subtracted - ${vacationDays} vacation days ignored)`);
     }
   }
 
-  // ===== Helper function: Get staff available for a shift =====
   const getStaffAvailableForShift = (dateStr, shiftType) => {
     const available = [];
     
@@ -1495,7 +1488,7 @@ class StaffScheduleApp {
       const entry = staffDays[dateStr];
       
       if (!entry) return;
-      if (entry[shiftType] === 'V') return; // Vacation = absolute blocker
+      if (entry[shiftType] === 'V') return;
       
       const availability = entry[shiftType];
       if (!availability || availability === 'U' || availability === '') return;
@@ -1506,7 +1499,6 @@ class StaffScheduleApp {
     return available;
   };
 
-  // ===== Helper: Check if staff already assigned to other shift same day =====
   const isDoubleShifted = (name, dateStr, currentShift) => {
     const roster = this.generatedRoster[dateStr];
     if (!roster) return false;
@@ -1519,7 +1511,7 @@ class StaffScheduleApp {
     return false;
   };
 
-  // ===== Initialize empty roster =====
+  // Initialize empty roster
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
     const dateStr = d.toISOString().split('T')[0];
@@ -1535,12 +1527,17 @@ class StaffScheduleApp {
   console.log("\n=== ROSTER GENERATION START ===");
   console.log("Month:", new Date(year, month, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' }));
   console.log("Ideal users:", Array.from(this.idealUsers));
+  console.log("Ideal Availability Data:", this.idealAvailability); // DEBUG
   console.log("Checking ideal availabilities:");
   this.idealUsers.forEach(name => {
-    console.log(`  ${name}:`, this.idealAvailability[name] ? Object.keys(this.idealAvailability[name]).length + " entries" : "NOT FOUND");
+    const data = this.idealAvailability[name];
+    console.log(`  ${name}:`, data ? Object.keys(data).length + " entries" : "NOT FOUND");
+    if (data) {
+      console.log(`    Sample entries:`, Object.keys(data).slice(0, 5));
+    }
   });
 
-  // ===== STEP 1: Place ideal staff first (highest priority) =====
+  // ===== STEP 1: Place ideal staff first =====
   console.log("\nSTEP 1: Placing ideal schedule selections...");
   
   const idealPlaced = {};
@@ -1551,7 +1548,8 @@ class StaffScheduleApp {
     const staffIdeal = this.idealAvailability[name] || {};
     const isRN = rnNames.has(name);
     
-    console.log(`Processing ideal user: ${name} (RN: ${isRN})`);
+    console.log(`\nProcessing ideal user: ${name} (RN: ${isRN})`);
+    console.log(`  Has ${Object.keys(staffIdeal).length} dates in ideal schedule`);
     
     Object.keys(staffIdeal).forEach(dateStr => {
       const d = new Date(dateStr);
@@ -1559,7 +1557,6 @@ class StaffScheduleApp {
       
       const entry = staffIdeal[dateStr] || {};
       
-      // Ideal Day shift
       if (entry.Day === 'D') {
         const shiftKey = isRN ? 'nurseDay' : 'paraDay';
         
@@ -1576,7 +1573,6 @@ class StaffScheduleApp {
         }
       }
       
-      // Ideal Night shift
       if (entry.Night === 'N') {
         const shiftKey = isRN ? 'nurseNight' : 'paraNight';
         
@@ -1595,7 +1591,7 @@ class StaffScheduleApp {
     });
   });
 
-  // ===== STEP 2: Fill remaining shifts from available staff =====
+  // ===== STEP 2: Fill remaining shifts =====
   console.log("\nSTEP 2: Filling remaining shifts from available staff...");
   
   for (let day = 1; day <= daysInMonth; day++) {
@@ -1709,7 +1705,6 @@ class StaffScheduleApp {
   console.log(`  ❌ Days with conflicts: ${conflictDays}/${daysInMonth}`);
 
   console.log(`\n👥 STAFF ASSIGNMENT SUMMARY:`);
-  console.log(`Legend: ✓ = Met requirement | ⚠️ = Under requirement | (V) = Vacation-adjustable\n`);
   [...rnNames, ...paraNames].forEach(name => {
     const req = adjustedRequirements[name];
     if (req.adjusted > 0) {
@@ -1722,7 +1717,6 @@ class StaffScheduleApp {
 
   console.log("\n=== ROSTER GENERATION COMPLETE ===\n");
 
-  // Save to Firebase
   firebase.database().ref("generatedRoster").set(this.generatedRoster);
   this.renderRosterCalendar();
 
