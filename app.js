@@ -1494,33 +1494,35 @@ class StaffScheduleApp {
   console.log(`allAvailability has data for: ${Object.keys(this.allAvailability).join(', ')}`);
 
   const getStaffAvailableForShift = (dateStr, shiftType) => {
-    const available = [];
+  const available = [];
+  
+  Object.keys(this.allAvailability).forEach(name => {
+    const staffDays = this.allAvailability[name] || {};
+    const entry = staffDays[dateStr];
     
-    Object.keys(this.allAvailability).forEach(name => {
-      const staffDays = this.allAvailability[name] || {};
-      const entry = staffDays[dateStr];
-      
-      if (!entry) return;
-      
-      const value = entry[shiftType];
-      
-      if (value && value !== 'V' && value !== 'U' && value !== '') {
-        available.push(name);
-      }
-    });
+    if (!entry) return;
     
-    return available;
-  };
+    const value = entry[shiftType];
+    
+    console.log(`  ${name} on ${dateStr} ${shiftType}: ${value}`);
+    
+    if (value && value !== 'V' && value !== 'U' && value !== '') {
+      available.push(name);
+    }
+  });
+  
+  return available;
+};
 
-  const isDoubleShifted = (name, dateStr, currentShift) => {
-    const roster = this.generatedRoster[dateStr];
-    if (!roster) return false;
-    if (currentShift === 'paraDay' && roster.paraNight === name) return true;
-    if (currentShift === 'paraNight' && roster.paraDay === name) return true;
-    if (currentShift === 'nurseDay' && roster.nurseNight === name) return true;
-    if (currentShift === 'nurseNight' && roster.nurseDay === name) return true;
-    return false;
-  };
+const isDoubleShifted = (name, dateStr, currentShift) => {
+  const roster = this.generatedRoster[dateStr];
+  if (!roster) return false;
+  if (currentShift === 'paraDay' && roster.paraNight === name) return true;
+  if (currentShift === 'paraNight' && roster.paraDay === name) return true;
+  if (currentShift === 'nurseDay' && roster.nurseNight === name) return true;
+  if (currentShift === 'nurseNight' && roster.nurseDay === name) return true;
+  return false;
+};
 
   console.log("\nSTEP 1: Placing ideal staff (Greg, Scott, Graham, Stuart)...");
   const idealPlaced = {};
