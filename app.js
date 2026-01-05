@@ -5,17 +5,12 @@ class StaffScheduleApp {
     this.isOverviewMode = false;
 
     this.privilegedUsers = new Set([
-      "Greg Barton",
-      "Scott McTaggart",
-      "Graham Newton"
-    ]);
+  "Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant"  // 👈 ADD STUART
+]);
 
-    this.idealUsers = new Set([
-      "Greg Barton",
-      "Scott McTaggart",
-      "Graham Newton",
-      "Stuart Grant"
-    ]);
+this.idealUsers = new Set([
+  "Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant"
+]);
 
     this.loginCodes = {
       "Greg Barton": "B123",
