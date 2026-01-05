@@ -520,6 +520,7 @@ class StaffScheduleApp {
     }
 
     this.rosterDate = newDate;
+    this.loadRosterFromFirebase();
     this.renderRosterCalendar();
     this.updateRosterMonthLabel();
   }
