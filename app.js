@@ -7,10 +7,11 @@ class StaffScheduleApp {
     this.isOverviewMode = false;
 
     this.privilegedUsers = new Set([
-      "Greg Barton",
-      "Scott McTaggart",
-      "Graham Newton"
-    ]);
+  "Greg Barton",
+  "Scott McTaggart",
+  "Graham Newton",
+  "Stuart Grant"  // ADD THIS LINE
+]);
 
     this.idealUsers = new Set([
       "Greg Barton",
