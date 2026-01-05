@@ -1,7 +1,7 @@
 class StaffScheduleApp {
   constructor() {
     // GitHub Sync Configuration
-    this.GITHUB_TOKEN =  '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';
+    this.GITHUB_TOKEN =  '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';
     this.GITHUB_REPO_OWNER = 'gbartonstars';
     this.GITHUB_REPO_NAME = '2026-27-AMC-availability-YYC';
     this.GITHUB_FILE_PATH = 'availability.json';
