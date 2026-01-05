@@ -557,7 +557,7 @@ class StaffScheduleApp {
       calendarEl.appendChild(blankCell);
     }
 
-    const getAvailableForShift = (dateStr, shiftType) => {
+     const getAvailableForShift = (dateStr, shiftType) => {
       const available = [];
       const rnNames = new Set([
         "Graham Newton","Stuart Grant","Kris Austin",
@@ -584,6 +584,21 @@ class StaffScheduleApp {
 
       return available.sort();
     };
+
+    if (!this.generatedRoster) {
+      this.generatedRoster = {};
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      const dateStr = d.toISOString().split('T')[0];
+
+      const dayCell = document.createElement('div');
+      dayCell.classList.add('day-cell');
+      if (d.getDay() === 0 || d.getDay() === 6) {
+        dayCell.classList.add('weekend');
+      }
+
 
     if (!this.generatedRoster) {
       this.generatedRoster = {};
