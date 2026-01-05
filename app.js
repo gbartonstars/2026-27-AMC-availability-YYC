@@ -131,20 +131,46 @@ class StaffScheduleApp {
 
   // Live listener: keep data in sync across all devices
   loadAllData() {
-    const ref = firebase.database().ref("scheduleData");
+  console.log("🔥 loadAllData() STARTED");
+  
+  // TEST: One-time read
+  firebase.database().ref("scheduleData").once('value', snapshot => {
+    console.log("🔥 ONCE READ:", snapshot.val());
+    console.log("🔥 allAvailability keys:", Object.keys(snapshot.val()?.allAvailability || {}));
+  });
 
-    ref.on("value", snapshot => {
-      const data = snapshot.val() || {};
-      this.allAvailability = data.allAvailability || {};
-      this.idealAvailability = data.idealAvailability || {};
+  const ref = firebase.database().ref("scheduleData");
+  ref.on("value", snapshot => {
+    console.log("🔥 LIVE UPDATE:", snapshot.val());
+    const data = snapshot.val() || {};
+    this.allAvailability = data.allAvailability || {};
+    this.idealAvailability = data.idealAvailability || {};
+    console.log("🔥 LOADED STAFF COUNT:", Object.keys(this.allAvailability).length);
+    
+    if (this.currentStaff || this.isOverviewMode) {
+      this.renderCalendar();
+      this.updateAvailabilitySummary();
+    }
+  }, error => {
+    console.error("🔥 FIREBASE ERROR:", error);
+  });
 
-      if (this.currentStaff || this.isOverviewMode) {
-        this.renderCalendar();
-        this.updateAvailabilitySummary();
-      }
-    }, error => {
-      console.error("Error listening to Firebase data", error);
-    });
+  // Locks listener
+  const locksRef = firebase.database().ref("locks");
+  locksRef.on("value", snapshot => {
+    const data = snapshot.val() || {};
+    this.lockFirstSix = !!data.firstSixMonths;
+    this.lockLastSix = !!data.lastSixMonths;
+    this.updateLockStatusText();
+  }, error => {
+    console.error("Error listening to Firebase locks", error);
+  });
+
+  // Roster listener
+  firebase.database().ref("generatedRoster").on("value", snapshot => {
+    this.generatedRoster = snapshot.val() || {};
+  });
+}
 
     // NEW: listen for schedule locks
     const locksRef = firebase.database().ref("locks");
