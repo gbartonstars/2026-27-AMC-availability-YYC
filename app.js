@@ -528,6 +528,10 @@ class StaffScheduleApp {
 
   // Render the auto-generated roster calendar (read-only)
   renderRosterCalendar() {
+    console.log("DEBUG: renderRosterCalendar called");
+    console.log("DEBUG: this.generatedRoster =", this.generatedRoster);
+    console.log("DEBUG: this.rosterDate =", this.rosterDate);
+    
     const calendarEl = document.getElementById('rosterCalendar');
     if (!calendarEl) return;
     calendarEl.innerHTML = '';
