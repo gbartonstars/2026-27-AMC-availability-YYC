@@ -172,22 +172,6 @@ class StaffScheduleApp {
   });
 }
 
-    // NEW: listen for schedule locks
-    const locksRef = firebase.database().ref("locks");
-    locksRef.on("value", snapshot => {
-      const data = snapshot.val() || {};
-      this.lockFirstSix = !!data.firstSixMonths;
-      this.lockLastSix = !!data.lastSixMonths;
-      this.updateLockStatusText();
-    }, error => {
-      console.error("Error listening to Firebase locks", error);
-    });
-
-    // Load generated roster persistence
-    firebase.database().ref("generatedRoster").on("value", snapshot => {
-      this.generatedRoster = snapshot.val() || {};
-    });
-  }
 
   bindEvents() {
     document.getElementById('staffSelect')
