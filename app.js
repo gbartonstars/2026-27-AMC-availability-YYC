@@ -1462,7 +1462,7 @@ class StaffScheduleApp {
   const requirementsTable = daysInMonth === 30 ? this.minimumRequired30 : this.minimumRequired31;
   const adjustedRequirements = {};
   
-  console.log("\nCalculating adjusted requirements...");
+  console.log("\nSTEP 0: Calculating adjusted requirements...");
   for (const name of [...rnNames, ...paraNames]) {
     let baseRequired = requirementsTable[name] || 0;
     let vacationDays = 0;
@@ -1489,22 +1489,28 @@ class StaffScheduleApp {
     };
   }
 
+  console.log(`Requirements loaded for ${Object.keys(adjustedRequirements).length} staff members`);
+  console.log(`allAvailability has data for: ${Object.keys(this.allAvailability).join(', ')}`);
+
   const getStaffAvailableForShift = (dateStr, shiftType) => {
-  const available = [];
-  Object.keys(this.allAvailability).forEach(name => {
-    const staffDays = this.allAvailability[name] || {};
-    const entry = staffDays[dateStr];
-    if (!entry) return; // No entry = not available
+    const available = [];
     
-    const value = entry[shiftType];
+    Object.keys(this.allAvailability).forEach(name => {
+      const staffDays = this.allAvailability[name] || {};
+      const entry = staffDays[dateStr];
+      
+      if (!entry) return;
+      
+      const value = entry[shiftType];
+      
+      if (value && value !== 'V' && value !== 'U' && value !== '') {
+        available.push(name);
+      }
+    });
     
-    // Include: A, R, S, T (anything EXCEPT U, V, or empty)
-    if (value && value !== 'V' && value !== 'U' && value !== '') {
-      available.push(name);
-    }
-  });
-  return available;
-};
+    return available;
+  };
+
   const isDoubleShifted = (name, dateStr, currentShift) => {
     const roster = this.generatedRoster[dateStr];
     if (!roster) return false;
@@ -1515,7 +1521,7 @@ class StaffScheduleApp {
     return false;
   };
 
-  console.log("\nSTEP 1: Placing ideal staff...");
+  console.log("\nSTEP 1: Placing ideal staff (Greg, Scott, Graham, Stuart)...");
   const idealPlaced = {};
   
   this.idealUsers.forEach(name => {
