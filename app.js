@@ -1568,57 +1568,61 @@ loadRosterFromFirebase() {
       const roster = this.generatedRoster[dateStr];
 
       if (!roster.paraDay) {
-        const available = getStaffAvailableForShift(dateStr, 'Day')
-          .filter(name => paraNames.has(name))
-          .filter(name => !idealPlaced[name] || !idealPlaced[name].includes(dateStr));
-        
-        if (available.length > 0) {
-          roster.paraDay = available[0];
-          console.log(`  ✓ Filled ${dateStr} paraDay with ${available[0]}`);
-        } else {
-          console.log(`  ✗ NO para available for ${dateStr} paraDay`);
-        }
-      }
+  const available = getStaffAvailableForShift(dateStr, 'Day')
+    .filter(name => paraNames.has(name))
+    .filter(name => !idealPlaced[name] || !idealPlaced[name].includes(dateStr));
+  
+  if (available.length > 0) {
+    // STUART/GRAHAM PRIORITY
+    const priorityFirst = available.filter(name => this.idealUsers.has(name));
+    roster.paraDay = priorityFirst.length > 0 ? priorityFirst[0] : available[0];
+    console.log(`  ✓ Filled ${dateStr} paraDay with ${roster.paraDay} (priority: ${priorityFirst.length})`);
+  } else {
+    console.log(`  ✗ NO para available for ${dateStr} paraDay`);
+  }
+}
 
-      if (!roster.nurseDay) {
-        const available = getStaffAvailableForShift(dateStr, 'Day')
-          .filter(name => rnNames.has(name))
-          .filter(name => !idealPlaced[name] || !idealPlaced[name].includes(dateStr));
-        
-        if (available.length > 0) {
-          roster.nurseDay = available[0];
-          console.log(`  ✓ Filled ${dateStr} nurseDay with ${available[0]}`);
-        } else {
-          console.log(`  ✗ NO nurse available for ${dateStr} nurseDay`);
-        }
-      }
+if (!roster.nurseDay) {
+  const available = getStaffAvailableForShift(dateStr, 'Day')
+    .filter(name => rnNames.has(name))
+    .filter(name => !idealPlaced[name] || !idealPlaced[name].includes(dateStr));
+  
+  if (available.length > 0) {
+    const priorityFirst = available.filter(name => this.idealUsers.has(name));
+    roster.nurseDay = priorityFirst.length > 0 ? priorityFirst[0] : available[0];
+    console.log(`  ✓ Filled ${dateStr} nurseDay with ${roster.nurseDay} (priority: ${priorityFirst.length})`);
+  } else {
+    console.log(`  ✗ NO nurse available for ${dateStr} nurseDay`);
+  }
+}
 
-      if (!roster.paraNight) {
-        const available = getStaffAvailableForShift(dateStr, 'Night')
-          .filter(name => paraNames.has(name))
-          .filter(name => !idealPlaced[name] || !idealPlaced[name].includes(dateStr));
-        
-        if (available.length > 0) {
-          roster.paraNight = available[0];
-          console.log(`  ✓ Filled ${dateStr} paraNight with ${available[0]}`);
-        } else {
-          console.log(`  ✗ NO para available for ${dateStr} paraNight`);
-        }
-      }
+if (!roster.paraNight) {
+  const available = getStaffAvailableForShift(dateStr, 'Night')
+    .filter(name => paraNames.has(name))
+    .filter(name => !idealPlaced[name] || !idealPlaced[name].includes(dateStr));
+  
+  if (available.length > 0) {
+    const priorityFirst = available.filter(name => this.idealUsers.has(name));
+    roster.paraNight = priorityFirst.length > 0 ? priorityFirst[0] : available[0];
+    console.log(`  ✓ Filled ${dateStr} paraNight with ${roster.paraNight} (priority: ${priorityFirst.length})`);
+  } else {
+    console.log(`  ✗ NO para available for ${dateStr} paraNight`);
+  }
+}
 
-      if (!roster.nurseNight) {
-        const available = getStaffAvailableForShift(dateStr, 'Night')
-          .filter(name => rnNames.has(name))
-          .filter(name => !idealPlaced[name] || !idealPlaced[name].includes(dateStr));
-        
-        if (available.length > 0) {
-          roster.nurseNight = available[0];
-          console.log(`  ✓ Filled ${dateStr} nurseNight with ${available[0]}`);
-        } else {
-          console.log(`  ✗ NO nurse available for ${dateStr} nurseNight`);
-        }
-      }
-    }
+if (!roster.nurseNight) {
+  const available = getStaffAvailableForShift(dateStr, 'Night')
+    .filter(name => rnNames.has(name))
+    .filter(name => !idealPlaced[name] || !idealPlaced[name].includes(dateStr));
+  
+  if (available.length > 0) {
+    const priorityFirst = available.filter(name => this.idealUsers.has(name));
+    roster.nurseNight = priorityFirst.length > 0 ? priorityFirst[0] : available[0];
+    console.log(`  ✓ Filled ${dateStr} nurseNight with ${roster.nurseNight} (priority: ${priorityFirst.length})`);
+  } else {
+    console.log(`  ✗ NO nurse available for ${dateStr} nurseNight`);
+  }
+}
 
     console.log("\nSTEP 3: Checking for unfilled shifts...");
     
