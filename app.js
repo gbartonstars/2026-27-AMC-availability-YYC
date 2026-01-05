@@ -535,217 +535,206 @@ class StaffScheduleApp {
 
   // Render the auto-generated roster calendar (read-only)
   renderRosterCalendar() {
-    const calendarEl = document.getElementById('rosterCalendar');
-    if (!calendarEl) return;
-    calendarEl.innerHTML = '';
+  const calendarEl = document.getElementById('rosterCalendar');
+  if (!calendarEl) return;
+  calendarEl.innerHTML = '';
 
-    this.daysOfWeek.forEach(day => {
-      const dayNameEl = document.createElement('div');
-      dayNameEl.classList.add('day-name');
-      dayNameEl.textContent = day;
-      calendarEl.appendChild(dayNameEl);
+  this.daysOfWeek.forEach(day => {
+    const dayNameEl = document.createElement('div');
+    dayNameEl.classList.add('day-name');
+    dayNameEl.textContent = day;
+    calendarEl.appendChild(dayNameEl);
+  });
+
+  const year  = this.rosterDate.getFullYear();
+  const month = this.rosterDate.getMonth();
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const daysInMonth    = new Date(year, month + 1, 0).getDate();
+
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    const blankCell = document.createElement('div');
+    blankCell.classList.add('day-cell');
+    calendarEl.appendChild(blankCell);
+  }
+
+  const getAvailableForShift = (dateStr, shiftType) => {
+    const available = [];
+    const rnNames = new Set([
+      "Graham Newton","Stuart Grant","Kris Austin",
+      "Kellie Ann Vogelaar","Janice Kirkham",
+      "Flo Butler","Jodi Scott","Carolyn Hogan","Michelle Sexsmith"
+    ]);
+
+    const paraNames = new Set([
+      "Greg Barton","Scott McTaggart","Dave Allison",
+      "Mackenzie Wardle","Chad Hegge","Ken King",
+      "John Doyle","Bob Odney"
+    ]);
+
+    const allStaff = new Set([...rnNames, ...paraNames]);
+    
+    allStaff.forEach(name => {
+      const staffDays = this.allAvailability[name] || {};
+      const entry = staffDays[dateStr];
+      
+      if (!entry) return;
+      
+      const value = entry[shiftType];
+      
+      if (value && value !== 'V' && value !== 'U' && value !== '') {
+        available.push(name);
+      }
     });
 
-    const year  = this.rosterDate.getFullYear();
-    const month = this.rosterDate.getMonth();
-    const firstDayOfWeek = new Date(year, month, 1).getDay();
-    const daysInMonth    = new Date(year, month + 1, 0).getDate();
+    return available.sort();
+  };
 
-    for (let i = 0; i < firstDayOfWeek; i++) {
-      const blankCell = document.createElement('div');
-      blankCell.classList.add('day-cell');
-      calendarEl.appendChild(blankCell);
-    }
-
-     const getAvailableForShift = (dateStr, shiftType) => {
-      const available = [];
-      const rnNames = new Set([
-        "Graham Newton","Stuart Grant","Kris Austin",
-        "Kellie Ann Vogelaar","Janice Kirkham",
-        "Flo Butler","Jodi Scott","Carolyn Hogan","Michelle Sexsmith"
-      ]);
-
-      const paraNames = new Set([
-        "Greg Barton","Scott McTaggart","Dave Allison",
-        "Mackenzie Wardle","Chad Hegge","Ken King",
-        "John Doyle","Bob Odney"
-      ]);
-
-      const allStaff = new Set([...rnNames, ...paraNames]);
-      
-      allStaff.forEach(name => {
-        const staffDays = this.allAvailability[name] || {};
-        const entry = staffDays[dateStr];
-        
-        if (entry && entry[shiftType] && entry[shiftType] !== 'V') {
-          available.push(name);
-        }
-      });
-
-      return available.sort();
-    };
-
-    if (!this.generatedRoster) {
-      this.generatedRoster = {};
-    }
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const d = new Date(year, month, day);
-      const dateStr = d.toISOString().split('T')[0];
-
-      const dayCell = document.createElement('div');
-      dayCell.classList.add('day-cell');
-      if (d.getDay() === 0 || d.getDay() === 6) {
-        dayCell.classList.add('weekend');
-      }
-
-
-    if (!this.generatedRoster) {
-      this.generatedRoster = {};
-    }
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const d = new Date(year, month, day);
-      const dateStr = d.toISOString().split('T')[0];
-
-      const dayCell = document.createElement('div');
-      dayCell.classList.add('day-cell');
-      if (d.getDay() === 0 || d.getDay() === 6) {
-        dayCell.classList.add('weekend');
-      }
-
-      const dateLabel = document.createElement('div');
-      dateLabel.classList.add('date-label');
-      dateLabel.textContent = day;
-      dayCell.appendChild(dateLabel);
-
-      if (!this.generatedRoster[dateStr]) {
-        this.generatedRoster[dateStr] = {
-          paraDay: null,
-          nurseDay: null,
-          paraNight: null,
-          nurseNight: null,
-          conflicts: false
-        };
-      }
-
-      const entry = this.generatedRoster[dateStr];
-
-      if (entry.conflicts) {
-        dayCell.style.backgroundColor = '#ffcccc';
-        dayCell.style.borderColor = '#ff0000';
-        dayCell.style.borderWidth = '2px';
-      }
-
-      const shiftsContainer = document.createElement('div');
-      shiftsContainer.style.display = 'flex';
-      shiftsContainer.style.flexDirection = 'column';
-      shiftsContainer.style.gap = '4px';
-
-      // Para Day
-      const pdSelect = document.createElement('select');
-      pdSelect.style.width = '100%';
-      pdSelect.style.padding = '4px';
-      pdSelect.style.fontSize = '11px';
-      pdSelect.style.fontWeight = 'bold';
-      pdSelect.style.backgroundColor = '#f5f5f5';
-      pdSelect.style.border = '1px solid #999';
-      pdSelect.style.borderRadius = '3px';
-      
-      pdSelect.innerHTML = '<option value="">Para Day</option>';
-      const pdAvailable = getAvailableForShift(dateStr, 'Day');
-      pdAvailable.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        option.style.backgroundColor = '#90EE90';
-        option.style.fontWeight = 'bold';
-        option.style.color = '#000';
-        pdSelect.appendChild(option);
-      });
-      pdSelect.value = entry.paraDay || '';
-      pdSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraDay', e.target.value));
-      shiftsContainer.appendChild(pdSelect);
-
-      // Nurse Day
-      const ndSelect = document.createElement('select');
-      ndSelect.style.width = '100%';
-      ndSelect.style.padding = '4px';
-      ndSelect.style.fontSize = '11px';
-      ndSelect.style.fontWeight = 'bold';
-      ndSelect.style.backgroundColor = '#f5f5f5';
-      ndSelect.style.border = '1px solid #999';
-      ndSelect.style.borderRadius = '3px';
-      
-      ndSelect.innerHTML = '<option value="">Nurse Day</option>';
-      const ndAvailable = getAvailableForShift(dateStr, 'Day');
-      ndAvailable.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        option.style.backgroundColor = '#90EE90';
-        option.style.fontWeight = 'bold';
-        option.style.color = '#000';
-        ndSelect.appendChild(option);
-      });
-      ndSelect.value = entry.nurseDay || '';
-      ndSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseDay', e.target.value));
-      shiftsContainer.appendChild(ndSelect);
-
-      // Para Night
-      const pnSelect = document.createElement('select');
-      pnSelect.style.width = '100%';
-      pnSelect.style.padding = '4px';
-      pnSelect.style.fontSize = '11px';
-      pnSelect.style.fontWeight = 'bold';
-      pnSelect.style.backgroundColor = '#f5f5f5';
-      pnSelect.style.border = '1px solid #999';
-      pnSelect.style.borderRadius = '3px';
-      
-      pnSelect.innerHTML = '<option value="">Para Night</option>';
-      const pnAvailable = getAvailableForShift(dateStr, 'Night');
-      pnAvailable.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        option.style.backgroundColor = '#90EE90';
-        option.style.fontWeight = 'bold';
-        option.style.color = '#000';
-        pnSelect.appendChild(option);
-      });
-      pnSelect.value = entry.paraNight || '';
-      pnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraNight', e.target.value));
-      shiftsContainer.appendChild(pnSelect);
-
-      // Nurse Night
-      const nnSelect = document.createElement('select');
-      nnSelect.style.width = '100%';
-      nnSelect.style.padding = '4px';
-      nnSelect.style.fontSize = '11px';
-      nnSelect.style.fontWeight = 'bold';
-      nnSelect.style.backgroundColor = '#f5f5f5';
-      nnSelect.style.border = '1px solid #999';
-      nnSelect.style.borderRadius = '3px';
-      
-      nnSelect.innerHTML = '<option value="">Nurse Night</option>';
-      const nnAvailable = getAvailableForShift(dateStr, 'Night');
-      nnAvailable.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        option.style.backgroundColor = '#90EE90';
-        option.style.fontWeight = 'bold';
-        option.style.color = '#000';
-        nnSelect.appendChild(option);
-      });
-      nnSelect.value = entry.nurseNight || '';
-      nnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseNight', e.target.value));
-      shiftsContainer.appendChild(nnSelect);
-
-      dayCell.appendChild(shiftsContainer);
-      calendarEl.appendChild(dayCell);
-    }
+  if (!this.generatedRoster) {
+    this.generatedRoster = {};
   }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const dateStr = d.toISOString().split('T')[0];
+
+    const dayCell = document.createElement('div');
+    dayCell.classList.add('day-cell');
+    if (d.getDay() === 0 || d.getDay() === 6) {
+      dayCell.classList.add('weekend');
+    }
+
+    const dateLabel = document.createElement('div');
+    dateLabel.classList.add('date-label');
+    dateLabel.textContent = day;
+    dayCell.appendChild(dateLabel);
+
+    if (!this.generatedRoster[dateStr]) {
+      this.generatedRoster[dateStr] = {
+        paraDay: null,
+        nurseDay: null,
+        paraNight: null,
+        nurseNight: null,
+        conflicts: false
+      };
+    }
+
+    const entry = this.generatedRoster[dateStr];
+
+    if (entry.conflicts) {
+      dayCell.style.backgroundColor = '#ffcccc';
+      dayCell.style.borderColor = '#ff0000';
+      dayCell.style.borderWidth = '2px';
+    }
+
+    const shiftsContainer = document.createElement('div');
+    shiftsContainer.style.display = 'flex';
+    shiftsContainer.style.flexDirection = 'column';
+    shiftsContainer.style.gap = '4px';
+
+    // Para Day
+    const pdSelect = document.createElement('select');
+    pdSelect.style.width = '100%';
+    pdSelect.style.padding = '4px';
+    pdSelect.style.fontSize = '11px';
+    pdSelect.style.fontWeight = 'bold';
+    pdSelect.style.backgroundColor = '#f5f5f5';
+    pdSelect.style.border = '1px solid #999';
+    pdSelect.style.borderRadius = '3px';
+    
+    pdSelect.innerHTML = '<option value="">Para Day</option>';
+    const pdAvailable = getAvailableForShift(dateStr, 'Day');
+    pdAvailable.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      option.style.backgroundColor = '#90EE90';
+      option.style.fontWeight = 'bold';
+      option.style.color = '#000';
+      pdSelect.appendChild(option);
+    });
+    pdSelect.value = entry.paraDay || '';
+    pdSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraDay', e.target.value));
+    shiftsContainer.appendChild(pdSelect);
+
+    // Nurse Day
+    const ndSelect = document.createElement('select');
+    ndSelect.style.width = '100%';
+    ndSelect.style.padding = '4px';
+    ndSelect.style.fontSize = '11px';
+    ndSelect.style.fontWeight = 'bold';
+    ndSelect.style.backgroundColor = '#f5f5f5';
+    ndSelect.style.border = '1px solid #999';
+    ndSelect.style.borderRadius = '3px';
+    
+    ndSelect.innerHTML = '<option value="">Nurse Day</option>';
+    const ndAvailable = getAvailableForShift(dateStr, 'Day');
+    ndAvailable.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      option.style.backgroundColor = '#90EE90';
+      option.style.fontWeight = 'bold';
+      option.style.color = '#000';
+      ndSelect.appendChild(option);
+    });
+    ndSelect.value = entry.nurseDay || '';
+    ndSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseDay', e.target.value));
+    shiftsContainer.appendChild(ndSelect);
+
+    // Para Night
+    const pnSelect = document.createElement('select');
+    pnSelect.style.width = '100%';
+    pnSelect.style.padding = '4px';
+    pnSelect.style.fontSize = '11px';
+    pnSelect.style.fontWeight = 'bold';
+    pnSelect.style.backgroundColor = '#f5f5f5';
+    pnSelect.style.border = '1px solid #999';
+    pnSelect.style.borderRadius = '3px';
+    
+    pnSelect.innerHTML = '<option value="">Para Night</option>';
+    const pnAvailable = getAvailableForShift(dateStr, 'Night');
+    pnAvailable.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      option.style.backgroundColor = '#90EE90';
+      option.style.fontWeight = 'bold';
+      option.style.color = '#000';
+      pnSelect.appendChild(option);
+    });
+    pnSelect.value = entry.paraNight || '';
+    pnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraNight', e.target.value));
+    shiftsContainer.appendChild(pnSelect);
+
+    // Nurse Night
+    const nnSelect = document.createElement('select');
+    nnSelect.style.width = '100%';
+    nnSelect.style.padding = '4px';
+    nnSelect.style.fontSize = '11px';
+    nnSelect.style.fontWeight = 'bold';
+    nnSelect.style.backgroundColor = '#f5f5f5';
+    nnSelect.style.border = '1px solid #999';
+    nnSelect.style.borderRadius = '3px';
+    
+    nnSelect.innerHTML = '<option value="">Nurse Night</option>';
+    const nnAvailable = getAvailableForShift(dateStr, 'Night');
+    nnAvailable.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      option.style.backgroundColor = '#90EE90';
+      option.style.fontWeight = 'bold';
+      option.style.color = '#000';
+      nnSelect.appendChild(option);
+    });
+    nnSelect.value = entry.nurseNight || '';
+    nnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseNight', e.target.value));
+    shiftsContainer.appendChild(nnSelect);
+
+    dayCell.appendChild(shiftsContainer);
+    calendarEl.appendChild(dayCell);
+  }
+}
 
   // Update roster cell and save
   updateRosterCell(dateStr, shift, name) {
