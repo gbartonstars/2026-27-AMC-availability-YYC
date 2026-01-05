@@ -1490,19 +1490,21 @@ class StaffScheduleApp {
   }
 
   const getStaffAvailableForShift = (dateStr, shiftType) => {
-    const available = [];
-    Object.keys(this.allAvailability).forEach(name => {
-      const staffDays = this.allAvailability[name] || {};
-      const entry = staffDays[dateStr];
-      if (!entry) return;
-      if (entry[shiftType] === 'V') return;
-      const availability = entry[shiftType];
-      if (!availability || availability === 'U' || availability === '') return;
+  const available = [];
+  Object.keys(this.allAvailability).forEach(name => {
+    const staffDays = this.allAvailability[name] || {};
+    const entry = staffDays[dateStr];
+    if (!entry) return; // No entry = not available
+    
+    const value = entry[shiftType];
+    
+    // Include: A, R, S, T (anything EXCEPT U, V, or empty)
+    if (value && value !== 'V' && value !== 'U' && value !== '') {
       available.push(name);
-    });
-    return available;
-  };
-
+    }
+  });
+  return available;
+};
   const isDoubleShifted = (name, dateStr, currentShift) => {
     const roster = this.generatedRoster[dateStr];
     if (!roster) return false;
