@@ -411,7 +411,26 @@ class StaffScheduleApp {
     this.loadRosterFromFirebase();
     this.showSchedule();
   }
-
+  
+loadRosterFromFirebase() {
+  console.log("loadRosterFromFirebase called");
+  firebase.database().ref("generatedRoster").once('value', (snapshot) => {
+    if (snapshot.exists()) {
+      this.generatedRoster = snapshot.val();
+      console.log("Roster loaded:", this.generatedRoster);
+      this.renderRosterCalendar();
+      if (this.privilegedUsers.has(this.currentStaff)) {
+        setTimeout(() => this.renderEditableRoster(), 100);
+      }
+    } else {
+      console.log("No generated roster found");
+      this.generatedRoster = {};
+    }
+  }).catch((error) => {
+    console.error("Firebase load error:", error);
+  });
+}
+      
   changeIdealMonth(direction) {
     let newMonth = this.idealDate.getMonth() + direction;
     let newYear  = this.idealDate.getFullYear();
