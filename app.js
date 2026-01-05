@@ -1,10 +1,7 @@
 class StaffScheduleApp {
   constructor() {
     // GitHub Sync Configuration
-    this.GITHUB_TOKEN = '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';
-    this.GITHUB_REPO_OWNER = 'gbartonstars';
-    this.GITHUB_REPO_NAME = '2026-27-AMC-availability-YYC';
-    this.GITHUB_FILE_PATH = 'availability.json';
+    
     this.currentStaff = null;
     this.currentViewStaff = null;
     this.isOverviewMode = false;
@@ -126,74 +123,15 @@ class StaffScheduleApp {
   }
 
   // Save everything to Firebase (overwrite current data)
-  saveAllData() {
+ saveAllData() {
   const payload = {
     allAvailability: this.allAvailability,
     idealAvailability: this.idealAvailability
   };
   firebase.database().ref("scheduleData").set(payload);
-  this.syncToGithub();
 }
 
-async syncToGithub() {
-  if (!this.allAvailability || Object.keys(this.allAvailability).length === 0) {
-    console.warn('No availability data to sync');
-    return;
-  }
-
-  try {
-    const githubData = {
-      lastUpdated: new Date().toISOString(),
-      scheduleData: {
-        allAvailability: this.allAvailability,
-        idealAvailability: this.idealAvailability
-      }
-    };
-
-    const fileContent = JSON.stringify(githubData, null, 2);
-    const base64Content = btoa(fileContent);
-
-    let sha = null;
-    try {
-      const getResponse = await fetch(
-        `https://api.github.com/repos/${this.GITHUB_REPO_OWNER}/${this.GITHUB_REPO_NAME}/contents/${this.GITHUB_FILE_PATH}`,
-        { headers: { 'Authorization': `token ${this.GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' } }
-      );
-      if (getResponse.ok) {
-        const fileInfo = await getResponse.json();
-        sha = fileInfo.sha;
-      }
-    } catch (e) {
-      console.log('File does not exist yet, creating...');
-    }
-
-    const response = await fetch(
-      `https://api.github.com/repos/${this.GITHUB_REPO_OWNER}/${this.GITHUB_REPO_NAME}/contents/${this.GITHUB_FILE_PATH}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Authorization': `token ${this.GITHUB_TOKEN}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        body: JSON.stringify({
-          message: `STAR1 Availability Update - ${new Date().toLocaleString()}`,
-          content: base64Content,
-          sha: sha || undefined,
-          branch: 'main'
-        })
-      }
-    );
-
-    if (response.ok) {
-      console.log('✅ Synced to GitHub!');
-    } else {
-      console.error('❌ GitHub sync failed:', response.status);
-    }
-  } catch (error) {
-    console.error('Error syncing:', error);
-  }
-}
+  
 
   // Live listener: keep data in sync across all devices
   loadAllData() {
