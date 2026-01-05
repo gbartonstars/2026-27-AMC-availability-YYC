@@ -1609,7 +1609,7 @@ if (!roster.paraNight) {
     console.log(`  ✗ NO para available for ${dateStr} paraNight`);
   }
 }
-
+    }
 if (!roster.nurseNight) {
   const available = getStaffAvailableForShift(dateStr, 'Night')
     .filter(name => rnNames.has(name))
