@@ -500,30 +500,31 @@ class StaffScheduleApp {
   }
 
   changeRosterMonth(direction) {
-    let newMonth = this.rosterDate.getMonth() + direction;
-    let newYear  = this.rosterDate.getFullYear();
-    let newDate  = new Date(newYear, newMonth, 1);
+  let newMonth = this.rosterDate.getMonth() + direction;
+  let newYear  = this.rosterDate.getFullYear();
+  let newDate  = new Date(newYear, newMonth, 1);
 
-    if (newDate < this.dateRangeStart) {
-      newDate = new Date(
-        this.dateRangeStart.getFullYear(),
-        this.dateRangeStart.getMonth(),
-        1
-      );
-    }
-    if (newDate > this.dateRangeEnd) {
-      newDate = new Date(
-        this.dateRangeEnd.getFullYear(),
-        this.dateRangeEnd.getMonth(),
-        1
-      );
-    }
-
-    this.rosterDate = newDate;
-    this.loadRosterFromFirebase();
-    this.renderRosterCalendar();
-    this.updateRosterMonthLabel();
+  if (newDate < this.dateRangeStart) {
+    newDate = new Date(
+      this.dateRangeStart.getFullYear(),
+      this.dateRangeStart.getMonth(),
+      1
+    );
   }
+  if (newDate > this.dateRangeEnd) {
+    newDate = new Date(
+      this.dateRangeEnd.getFullYear(),
+      this.dateRangeEnd.getMonth(),
+      1
+    );
+  }
+
+  this.rosterDate = newDate;
+  // Don't call loadRosterFromFirebase here - it's a one-way listener
+  // Just render with whatever is currently in this.generatedRoster
+  this.renderRosterCalendar();
+  this.updateRosterMonthLabel();
+}
 
   updateRosterMonthLabel() {
     const monthName = this.monthNames[this.rosterDate.getMonth()];
