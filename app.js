@@ -820,6 +820,20 @@ getRosterCountsForMonth() {
   
   return counts;
 }
+  getMonthlyCapsForCurrentMonth() {
+    const year = this.rosterDate.getFullYear();
+    const month = this.rosterDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const minimumTable = daysInMonth === 31 ? this.minimumRequired31 : this.minimumRequired30;
+    
+    const caps = {};
+    Object.keys(minimumTable).forEach(name => {
+      caps[name] = { cap: minimumTable[name] };
+    });
+    
+    return caps;
+  }
 
   getMonthlyCapsForCurrentMonth() {
   const year = this.rosterDate.getFullYear();
@@ -862,6 +876,7 @@ renderRosterSummary() {
     };
   }
 
+  // If assigning a staff member, check their monthly cap
   if (name && name.trim() !== '') {
     const caps = this.getMonthlyCapsForCurrentMonth();
     const staffCap = caps[name];
@@ -872,6 +887,7 @@ renderRosterSummary() {
       return;
     }
 
+    // Count how many shifts this person already has this month
     let currentCount = 0;
     Object.keys(this.generatedRoster).forEach(dateStr => {
       const roster = this.generatedRoster[dateStr];
@@ -885,6 +901,7 @@ renderRosterSummary() {
       }
     });
 
+    // Check if adding this shift would exceed their cap
     if (currentCount >= staffCap.cap) {
       alert(
         `${name} has reached their shift limit (${staffCap.cap} shifts max this month). Cannot assign more shifts.`
@@ -894,6 +911,7 @@ renderRosterSummary() {
     }
   }
 
+  // Assign the shift
   this.generatedRoster[dateStr][shift] = name || null;
   firebase.database().ref('generatedRoster').set(this.generatedRoster);
   this.renderRosterCalendar();
