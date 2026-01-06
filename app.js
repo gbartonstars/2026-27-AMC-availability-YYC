@@ -1429,7 +1429,18 @@ class StaffScheduleApp {
   const month = this.rosterDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  this.generatedRoster = {};
+  // CRITICAL: Initialize generatedRoster as empty object
+this.generatedRoster = {};
+
+// DEBUG - Check what's in idealAvailability
+console.log("DEBUG: idealAvailability keys:", Object.keys(this.idealAvailability));
+["Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant"].forEach(name => {
+  const data = this.idealAvailability[name];
+  console.log(`  ${name}:`, data ? `${Object.keys(data).length} dates` : "NOT FOUND");
+  if (data) {
+    console.log(`    Sample dates:`, Object.keys(data).slice(0, 5));
+  }
+});
 
   const rnNames = new Set([
     "Graham Newton", "Stuart Grant", "Kris Austin",
