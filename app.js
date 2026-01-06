@@ -520,6 +520,7 @@ class StaffScheduleApp {
   }
 
   this.rosterDate = newDate;
+  this.loadRosterFromFirebase();
   // Don't call loadRosterFromFirebase here - it's a one-way listener
   // Just render with whatever is currently in this.generatedRoster
   this.renderRosterCalendar();
