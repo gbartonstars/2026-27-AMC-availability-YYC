@@ -1423,25 +1423,28 @@ class StaffScheduleApp {
 
   // Generate roster for the current roster month (ideal-aware, no double shifts)
   onGenerateRoster() {
-  if (!this.currentStaff || !this.privilegedUsers.has(this.currentStaff)) return;
-
   const year = this.rosterDate.getFullYear();
   const month = this.rosterDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // CRITICAL: Initialize generatedRoster as empty object
-this.generatedRoster = {};
-
-// DEBUG - Check what's in idealAvailability
-console.log("DEBUG: idealAvailability keys:", Object.keys(this.idealAvailability));
-["Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant"].forEach(name => {
-  const data = this.idealAvailability[name];
-  console.log(`  ${name}:`, data ? `${Object.keys(data).length} dates` : "NOT FOUND");
-  if (data) {
-    console.log(`    Sample dates:`, Object.keys(data).slice(0, 5));
+  // Initialize generatedRoster with structure for all days
+  this.generatedRoster = {};
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const dateStr = d.toISOString().split('T')[0];
+    this.generatedRoster[dateStr] = {
+      paraDay: null,
+      nurseDay: null,
+      paraNight: null,
+      nurseNight: null,
+      conflicts: false
+    };
   }
-});
 
+  console.log(`\n=== ROSTER GENERATION START ===`);
+  console.log(`Month: ${this.monthNames[month]} ${year}`);
+  console.log(`Days in month: ${daysInMonth}`);
+  
   const rnNames = new Set([
     "Graham Newton", "Stuart Grant", "Kris Austin",
     "Kellie Ann Vogelaar", "Janice Kirkham",
