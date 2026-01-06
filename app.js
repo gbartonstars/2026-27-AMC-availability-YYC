@@ -1543,9 +1543,9 @@ const isDoubleShifted = (name, dateStr, currentShift) => {
 };
 
   console.log("\nSTEP 1: Placing ideal staff (Greg, Scott, Graham, Stuart)...");
-  const idealPlaced = {};
-  
-  this.idealUsers.forEach(name => {
+const idealPlaced = {};
+
+this.idealUsers.forEach(name => {
   idealPlaced[name] = new Set();
   const staffIdeal = this.idealAvailability[name] || {};
   const isRN = rnNames.has(name);
@@ -1555,6 +1555,17 @@ const isDoubleShifted = (name, dateStr, currentShift) => {
     const d = new Date(dateStr + 'T00:00:00Z');
     if (d.getMonth() !== month || d.getFullYear() !== year) return;
     
+    // ENSURE the roster entry exists
+    if (!this.generatedRoster[dateStr]) {
+      this.generatedRoster[dateStr] = {
+        paraDay: null,
+        nurseDay: null,
+        paraNight: null,
+        nurseNight: null,
+        conflicts: false
+      };
+    }
+    
     const entry = staffIdeal[dateStr] || {};
     
     // Place Day shifts from ideal (no availability checking needed)
@@ -1563,7 +1574,6 @@ const isDoubleShifted = (name, dateStr, currentShift) => {
       if (!this.generatedRoster[dateStr][shiftKey] && !isDoubleShifted(name, dateStr, shiftKey)) {
         this.generatedRoster[dateStr][shiftKey] = name;
         idealPlaced[name].add(dateStr);
-        adjustedRequirements[name].assigned++;
         placed++;
       }
     }
@@ -1574,7 +1584,6 @@ const isDoubleShifted = (name, dateStr, currentShift) => {
       if (!this.generatedRoster[dateStr][shiftKey] && !isDoubleShifted(name, dateStr, shiftKey)) {
         this.generatedRoster[dateStr][shiftKey] = name;
         idealPlaced[name].add(dateStr);
-        adjustedRequirements[name].assigned++;
         placed++;
       }
     }
