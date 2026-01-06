@@ -736,7 +736,78 @@ class StaffScheduleApp {
     calendarEl.appendChild(dayCell);
   }
 }
+  
+getRosterCountsForMonth() {
+  const year = this.rosterDate.getFullYear();
+  const month = this.rosterDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  const counts = {};
+  
+  // Initialize all staff
+  const allStaff = [
+    "Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant",
+    "Dave Allison", "Mackenzie Wardle", "Chad Hegge", "Ken King", "John Doyle", "Bob Odney",
+    "Kris Austin", "Kellie Ann Vogelaar", "Janice Kirkham", "Flo Butler", "Jodi Scott",
+    "Carolyn Hogan", "Michelle Sexsmith"
+  ];
+  
+  allStaff.forEach(name => {
+    counts[name] = { total: 0, day: 0, night: 0, weekend: 0 };
+  });
+  
+  // Count shifts
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const dateStr = d.toISOString().split('T')[0];
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+    
+    const roster = this.generatedRoster[dateStr];
+    if (!roster) continue;
+    
+    // Count each shift
+    if (roster.paraDay) {
+      counts[roster.paraDay].total++;
+      counts[roster.paraDay].day++;
+      if (isWeekend) counts[roster.paraDay].weekend++;
+    }
+    if (roster.nurseDay) {
+      counts[roster.nurseDay].total++;
+      counts[roster.nurseDay].day++;
+      if (isWeekend) counts[roster.nurseDay].weekend++;
+    }
+    if (roster.paraNight) {
+      counts[roster.paraNight].total++;
+      counts[roster.paraNight].night++;
+      if (isWeekend) counts[roster.paraNight].weekend++;
+    }
+    if (roster.nurseNight) {
+      counts[roster.nurseNight].total++;
+      counts[roster.nurseNight].night++;
+      if (isWeekend) counts[roster.nurseNight].weekend++;
+    }
+  }
+  
+  return counts;
+}
 
+renderRosterSummary() {
+  const summaryEl = document.getElementById('rosterSummary');
+  if (!summaryEl) return;
+  
+  const counts = this.getRosterCountsForMonth();
+  let html = '<h3>Shift Summary</h3><table style="width:100%; border-collapse:collapse; font-size:12px;"><tr><th style="border:1px solid #ccc; padding:4px;">Staff</th><th style="border:1px solid #ccc; padding:4px;">Total</th><th style="border:1px solid #ccc; padding:4px;">Day</th><th style="border:1px solid #ccc; padding:4px;">Night</th><th style="border:1px solid #ccc; padding:4px;">Weekend</th></tr>';
+  
+  Object.keys(counts).sort().forEach(name => {
+    const c = counts[name];
+    if (c.total > 0) {
+      html += `<tr><td style="border:1px solid #ccc; padding:4px;">${name}</td><td style="border:1px solid #ccc; padding:4px; text-align:center;">${c.total}</td><td style="border:1px solid #ccc; padding:4px; text-align:center;">${c.day}</td><td style="border:1px solid #ccc; padding:4px; text-align:center;">${c.night}</td><td style="border:1px solid #ccc; padding:4px; text-align:center;">${c.weekend}</td></tr>`;
+    }
+  });
+  
+  html += '</table>';
+  summaryEl.innerHTML = html;
+}
   // Update roster cell and save
   updateRosterCell(dateStr, shift, name) {
     if (!this.generatedRoster[dateStr]) {
