@@ -863,7 +863,7 @@ renderRosterSummary() {
       return;
     }
 
-    // Count current shifts this staff member has this month
+    // Count current shifts this staff member has this month (DON'T COUNT THE NEW ONE YET)
     let currentCount = 0;
     Object.keys(this.generatedRoster).forEach(dStr => {
       const roster = this.generatedRoster[dStr];
@@ -877,7 +877,7 @@ renderRosterSummary() {
       }
     });
 
-    // ENFORCE CAP (only if override is OFF)
+    // ENFORCE CAP - check if ADDING another shift would exceed the cap
     if (currentCount >= staffCap.cap) {
       alert(`${name} has reached their shift limit (${staffCap.cap} shifts max this month). Cannot assign more shifts.\n\nEnable "Override Shift Cap" above to manually assign.`);
       this.renderRosterCalendar();
