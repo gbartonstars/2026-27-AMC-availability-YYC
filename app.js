@@ -612,7 +612,7 @@ class StaffScheduleApp {
     shiftsContainer.style.flexDirection = 'column';
     shiftsContainer.style.gap = '4px';
 
-    // PARA DAY
+    // ===== PARA DAY (ALL PARAS shown, AVAILABLE in green) =====
     const pdSelect = document.createElement('select');
     pdSelect.style.width = '100%';
     pdSelect.style.padding = '4px';
@@ -625,7 +625,7 @@ class StaffScheduleApp {
 
     const pdAvailable = getAvailableForShift(dateStr, 'Day');
     const pdAvailableSet = new Set(pdAvailable);
-    const paraNames = ["Greg Barton", "Scott McTaggart", "Dave Allison", "Mackenzie Wardle", "Chad Hegge", "Ken King", "John Doyle", "Bob Odney"];
+    const paraNames = ["Greg Barton","Scott McTaggart","Dave Allison","Mackenzie Wardle","Chad Hegge","Ken King","John Doyle","Bob Odney"];
     paraNames.forEach(name => {
       const option = document.createElement('option');
       option.value = name;
@@ -644,7 +644,7 @@ class StaffScheduleApp {
     pdSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraDay', e.target.value));
     shiftsContainer.appendChild(pdSelect);
 
-    // NURSE DAY
+    // ===== NURSE DAY (ALL RNs shown, AVAILABLE in green) =====
     const ndSelect = document.createElement('select');
     ndSelect.style.width = '100%';
     ndSelect.style.padding = '4px';
@@ -657,7 +657,7 @@ class StaffScheduleApp {
 
     const ndAvailable = getAvailableForShift(dateStr, 'Day');
     const ndAvailableSet = new Set(ndAvailable);
-    const rnNames = ["Graham Newton", "Stuart Grant", "Kris Austin", "Kellie Ann Vogelaar", "Janice Kirkham", "Flo Butler", "Jodi Scott", "Carolyn Hogan", "Michelle Sexsmith"];
+    const rnNames = ["Graham Newton","Stuart Grant","Kris Austin","Kellie Ann Vogelaar","Janice Kirkham","Flo Butler","Jodi Scott","Carolyn Hogan","Michelle Sexsmith"];
     rnNames.forEach(name => {
       const option = document.createElement('option');
       option.value = name;
@@ -676,7 +676,7 @@ class StaffScheduleApp {
     ndSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseDay', e.target.value));
     shiftsContainer.appendChild(ndSelect);
 
-    // PARA NIGHT
+    // ===== PARA NIGHT =====
     const pnSelect = document.createElement('select');
     pnSelect.style.width = '100%';
     pnSelect.style.padding = '4px';
@@ -707,7 +707,7 @@ class StaffScheduleApp {
     pnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraNight', e.target.value));
     shiftsContainer.appendChild(pnSelect);
 
-    // NURSE NIGHT
+    // ===== NURSE NIGHT =====
     const nnSelect = document.createElement('select');
     nnSelect.style.width = '100%';
     nnSelect.style.padding = '4px';
@@ -738,9 +738,10 @@ class StaffScheduleApp {
     nnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseNight', e.target.value));
     shiftsContainer.appendChild(nnSelect);
 
+    // Add shifts to day
     dayCell.appendChild(shiftsContainer);
 
-    // HIGHLIGHT UNFILLED SHIFTS IN RED
+    // ===== CHECK FOR UNFILLED SHIFTS & HIGHLIGHT RED =====
     const emptyShifts = [];
     if (!entry.paraDay) emptyShifts.push('Para Day');
     if (!entry.nurseDay) emptyShifts.push('Nurse Day');
@@ -839,22 +840,6 @@ renderRosterSummary() {
 }
   // Update roster cell and save
   updateRosterCell(dateStr, shift, name) {
-    if (!this.generatedRoster[dateStr]) {
-      this.generatedRoster[dateStr] = {
-        paraDay: null,
-        nurseDay: null,
-        paraNight: null,
-        nurseNight: null,
-        conflicts: false
-      };
-    }
-    this.generatedRoster[dateStr][shift] = name || null;
-    firebase.database().ref("generatedRoster").set(this.generatedRoster);
-    console.log(`Updated ${dateStr} ${shift} to ${name}`);
-  }
-
-  // New method to update roster cells
-  updateRosterCell(dateStr, shift, name) {
   if (!this.generatedRoster[dateStr]) {
     this.generatedRoster[dateStr] = {
       paraDay: null,
@@ -865,8 +850,10 @@ renderRosterSummary() {
     };
   }
 
-  // Check monthly shift cap
-  if (name && name.trim() !== '') {
+  // CHECK MONTHLY SHIFT CAP (unless override is enabled)
+  const overrideEnabled = document.getElementById('overrideShiftCap')?.checked || false;
+
+  if (name && name.trim() !== '' && !overrideEnabled) {
     const caps = this.getMonthlyCapsForCurrentMonth();
     const staffCap = caps[name];
 
@@ -876,23 +863,29 @@ renderRosterSummary() {
       return;
     }
 
-    // Count current shifts
+    // Count current shifts this staff member has this month
     let currentCount = 0;
-    Object.keys(this.generatedRoster).forEach(dateStr => {
-      const roster = this.generatedRoster[dateStr];
-      if (roster.paraDay === name || roster.nurseDay === name || roster.paraNight === name || roster.nurseNight === name) {
+    Object.keys(this.generatedRoster).forEach(dStr => {
+      const roster = this.generatedRoster[dStr];
+      if (
+        roster.paraDay === name ||
+        roster.nurseDay === name ||
+        roster.paraNight === name ||
+        roster.nurseNight === name
+      ) {
         currentCount++;
       }
     });
 
-    // Check if exceeds cap
+    // ENFORCE CAP (only if override is OFF)
     if (currentCount >= staffCap.cap) {
-      alert(`${name} has reached their shift limit (${staffCap.cap} shifts max this month). Cannot assign more shifts.`);
+      alert(`${name} has reached their shift limit (${staffCap.cap} shifts max this month). Cannot assign more shifts.\n\nEnable "Override Shift Cap" above to manually assign.`);
       this.renderRosterCalendar();
       return;
     }
   }
 
+  // Assign the shift
   this.generatedRoster[dateStr][shift] = name || null;
   firebase.database().ref('generatedRoster').set(this.generatedRoster);
   this.renderRosterCalendar();
