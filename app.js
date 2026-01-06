@@ -968,13 +968,13 @@ renderRosterSummary() {
           `Para Day: ${counts.paraDay} | Para Night: ${counts.paraNight}`;
 
         if (
-          counts.rnDay === 0 ||
-          counts.rnNight === 0 ||
-          counts.paraDay === 0 ||
-          counts.paraNight === 0
-        ) {
-          dayCell.classList.add('no-availability');
-        }
+  counts.rnDay === 0 &&
+  counts.rnNight === 0 &&
+  counts.paraDay === 0 &&
+  counts.paraNight === 0
+) {
+  dayCell.classList.add('no-availability');
+}
 
         dayCell.appendChild(rnDiv);
         dayCell.appendChild(pDiv);
