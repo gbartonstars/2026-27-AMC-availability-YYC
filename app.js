@@ -1554,10 +1554,10 @@ const isDoubleShifted = (name, dateStr, currentShift) => {
   
   let placed = 0;
   Object.keys(staffIdeal).forEach(dateStr => {
-      const d = new Date(dateStr);
-      if (d.getMonth() !== month || d.getFullYear() !== year) return;
-      
-      const entry = staffIdeal[dateStr] || {};
+  const d = new Date(dateStr + 'T00:00:00Z');  // Force UTC parsing
+  if (d.getMonth() !== month || d.getFullYear() !== year) return;
+  
+  const entry = staffIdeal[dateStr] || {};
       
       if (entry.Day === 'D') {
         const shiftKey = isRN ? 'nurseDay' : 'paraDay';
