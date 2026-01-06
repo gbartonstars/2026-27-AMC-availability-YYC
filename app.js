@@ -1589,6 +1589,18 @@ const isDoubleShifted = (name, dateStr, currentShift) => {
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
     const dateStr = d.toISOString().split('T')[0];
+    
+    // ENSURE the roster entry exists before accessing it
+    if (!this.generatedRoster[dateStr]) {
+      this.generatedRoster[dateStr] = {
+        paraDay: null,
+        nurseDay: null,
+        paraNight: null,
+        nurseNight: null,
+        conflicts: false
+      };
+    }
+    
     const roster = this.generatedRoster[dateStr];
 
     if (!roster.paraDay) {
