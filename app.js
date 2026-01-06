@@ -1550,35 +1550,38 @@ const isDoubleShifted = (name, dateStr, currentShift) => {
   const staffIdeal = this.idealAvailability[name] || {};
   const isRN = rnNames.has(name);
   
-  console.log(`\n  Processing ${name}:`, Object.keys(staffIdeal).length, 'ideal dates');
-  
   let placed = 0;
   Object.keys(staffIdeal).forEach(dateStr => {
-  const d = new Date(dateStr + 'T00:00:00Z');  // Force UTC parsing
-  if (d.getMonth() !== month || d.getFullYear() !== year) return;
+    const d = new Date(dateStr + 'T00:00:00Z');
+    if (d.getMonth() !== month || d.getFullYear() !== year) return;
+    
+    const entry = staffIdeal[dateStr] || {};
+    
+    // Place Day shifts from ideal (no availability checking needed)
+    if (entry.Day === 'D') {
+      const shiftKey = isRN ? 'nurseDay' : 'paraDay';
+      if (!this.generatedRoster[dateStr][shiftKey] && !isDoubleShifted(name, dateStr, shiftKey)) {
+        this.generatedRoster[dateStr][shiftKey] = name;
+        idealPlaced[name].add(dateStr);
+        adjustedRequirements[name].assigned++;
+        placed++;
+      }
+    }
+    
+    // Place Night shifts from ideal (no availability checking needed)
+    if (entry.Night === 'N') {
+      const shiftKey = isRN ? 'nurseNight' : 'paraNight';
+      if (!this.generatedRoster[dateStr][shiftKey] && !isDoubleShifted(name, dateStr, shiftKey)) {
+        this.generatedRoster[dateStr][shiftKey] = name;
+        idealPlaced[name].add(dateStr);
+        adjustedRequirements[name].assigned++;
+        placed++;
+      }
+    }
+  });
   
-  const entry = staffIdeal[dateStr] || {};
-      
-      if (entry.Day === 'D') {
-        const shiftKey = isRN ? 'nurseDay' : 'paraDay';
-        if (!this.generatedRoster[dateStr][shiftKey] && !isDoubleShifted(name, dateStr, shiftKey)) {
-          this.generatedRoster[dateStr][shiftKey] = name;
-          idealPlaced[name].add(dateStr);
-          adjustedRequirements[name].assigned++;
-          placed++;
-        }
-      }
-      
-      if (entry.Night === 'N') {
-        const shiftKey = isRN ? 'nurseNight' : 'paraNight';
-        if (!this.generatedRoster[dateStr][shiftKey] && !isDoubleShifted(name, dateStr, shiftKey)) {
-          this.generatedRoster[dateStr][shiftKey] = name;
-          idealPlaced[name].add(dateStr);
-          adjustedRequirements[name].assigned++;
-          placed++;
-        }
-      }
-    });
+  console.log(`  ${name}: placed ${placed} shifts`);
+});
     
     console.log(`  ${name}: placed ${placed} shifts`);
   });
