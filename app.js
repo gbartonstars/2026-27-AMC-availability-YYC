@@ -735,6 +735,8 @@ class StaffScheduleApp {
     dayCell.appendChild(shiftsContainer);
     calendarEl.appendChild(dayCell);
   }
+
+    this.renderRosterSummary(); 
 }
   
 getRosterCountsForMonth() {
