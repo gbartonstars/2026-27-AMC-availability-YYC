@@ -850,10 +850,8 @@ renderRosterSummary() {
     };
   }
 
-  // CHECK MONTHLY SHIFT CAP (unless override is enabled)
-  const overrideEnabled = document.getElementById('overrideShiftCap')?.checked || false;
-
-  if (name && name.trim() !== '' && !overrideEnabled) {
+  // If assigning a staff member, check their monthly cap
+  if (name && name.trim() !== '') {
     const caps = this.getMonthlyCapsForCurrentMonth();
     const staffCap = caps[name];
 
@@ -863,10 +861,10 @@ renderRosterSummary() {
       return;
     }
 
-    // Count current shifts this staff member has this month (DON'T COUNT THE NEW ONE YET)
+    // Count how many shifts this person already has this month
     let currentCount = 0;
-    Object.keys(this.generatedRoster).forEach(dStr => {
-      const roster = this.generatedRoster[dStr];
+    Object.keys(this.generatedRoster).forEach(dateStr => {
+      const roster = this.generatedRoster[dateStr];
       if (
         roster.paraDay === name ||
         roster.nurseDay === name ||
@@ -877,9 +875,11 @@ renderRosterSummary() {
       }
     });
 
-    // ENFORCE CAP - check if ADDING another shift would exceed the cap
+    // Check if adding this shift would exceed their cap
     if (currentCount >= staffCap.cap) {
-      alert(`${name} has reached their shift limit (${staffCap.cap} shifts max this month). Cannot assign more shifts.\n\nEnable "Override Shift Cap" above to manually assign.`);
+      alert(
+        `${name} has reached their shift limit (${staffCap.cap} shifts max this month). Cannot assign more shifts.`
+      );
       this.renderRosterCalendar();
       return;
     }
