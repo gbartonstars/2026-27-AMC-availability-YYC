@@ -1582,9 +1582,6 @@ const isDoubleShifted = (name, dateStr, currentShift) => {
   
   console.log(`  ${name}: placed ${placed} shifts`);
 });
-    
-    console.log(`  ${name}: placed ${placed} shifts`);
-  });
 
   console.log("\nSTEP 2: Filling remaining shifts...");
   let filledCount = 0;
