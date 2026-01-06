@@ -1543,12 +1543,14 @@ const isDoubleShifted = (name, dateStr, currentShift) => {
   const idealPlaced = {};
   
   this.idealUsers.forEach(name => {
-    idealPlaced[name] = new Set();
-    const staffIdeal = this.idealAvailability[name] || {};
-    const isRN = rnNames.has(name);
-    
-    let placed = 0;
-    Object.keys(staffIdeal).forEach(dateStr => {
+  idealPlaced[name] = new Set();
+  const staffIdeal = this.idealAvailability[name] || {};
+  const isRN = rnNames.has(name);
+  
+  console.log(`\n  Processing ${name}:`, Object.keys(staffIdeal).length, 'ideal dates');
+  
+  let placed = 0;
+  Object.keys(staffIdeal).forEach(dateStr => {
       const d = new Date(dateStr);
       if (d.getMonth() !== month || d.getFullYear() !== year) return;
       
