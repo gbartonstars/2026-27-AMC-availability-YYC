@@ -845,18 +845,6 @@ getRosterCountsForMonth() {
   return caps;
 }
 
-  getMonthlyCapsForCurrentMonth() {
-  const year = this.rosterDate.getFullYear();
-  const month = this.rosterDate.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const minimumTable = daysInMonth === 31 ? this.minimumRequired31 : this.minimumRequired30;
-  const caps = {};
-  Object.keys(minimumTable).forEach(name => {
-    caps[name] = { cap: minimumTable[name] };
-  });
-  return caps;
-}
-
 renderRosterSummary() {
   const summaryEl = document.getElementById('rosterSummary');
   if (!summaryEl) return;
