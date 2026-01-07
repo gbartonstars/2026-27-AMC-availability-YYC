@@ -876,54 +876,61 @@ renderRosterSummary() {
     };
   }
 
-  // If assigning a staff member, check their monthly cap
+  const oldValue = this.generatedRoster[dateStr][shift];
+
+  // VALIDATION: Check shift cap BEFORE making any changes
   if (name && name.trim() !== '') {
     const caps = this.getMonthlyCapsForCurrentMonth();
     const staffCap = caps[name];
 
     if (!staffCap) {
       alert(`No cap found for ${name}`);
-      this.renderRosterCalendar();
       return;
     }
 
-    // Count how many shifts this person already has this month
     // COUNT ONLY SHIFTS IN THE CURRENT ROSTER MONTH
-      const year = this.rosterDate.getFullYear();
-      const month = this.rosterDate.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const year = this.rosterDate.getFullYear();
+    const month = this.rosterDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-      let currentCount = 0;
-      for (let day = 1; day <= daysInMonth; day++) {
-        const d = new Date(year, month, day);
-        const monthDateStr = d.toISOString().split('T')[0];
-        const roster = this.generatedRoster[monthDateStr];
-        
-        if (!roster) continue;
-        
-        if (
-          roster.paraDay === name ||
-          roster.nurseDay === name ||
-          roster.paraNight === name ||
-          roster.nurseNight === name
-        ) {
-          currentCount++;
-        }
+    let currentCount = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      const monthDateStr = d.toISOString().split('T')[0];
+      const roster = this.generatedRoster[monthDateStr];
+      
+      if (!roster) continue;
+      
+      if (
+        roster.paraDay === name ||
+        roster.nurseDay === name ||
+        roster.paraNight === name ||
+        roster.nurseNight === name
+      ) {
+        currentCount++;
       }
+    }
 
-    // Check if adding this shift would exceed their cap
+    // If this person is already assigned to this shift, don't count it twice
+    if (oldValue === name) {
+      currentCount--;
+    }
+
     if (currentCount >= staffCap.cap) {
       alert(
-        `${name} has reached their shift limit (${staffCap.cap} shifts max this month). Cannot assign more shifts.`
+        `${name} has reached their shift limit (${staffCap.cap} shifts max this month). Already has ${currentCount}. Cannot assign more shifts.`
       );
-      this.renderRosterCalendar();
       return;
     }
   }
 
-  // Assign the shift
+  // ASSIGNMENT: Update the roster
   this.generatedRoster[dateStr][shift] = name || null;
+  
+  // PERSISTENCE: Save the entire roster (preserves all months)
   firebase.database().ref('generatedRoster').set(this.generatedRoster);
+  
+  // REFRESH: Re-render to show the update
   this.renderRosterCalendar();
 }
 
