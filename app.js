@@ -919,10 +919,32 @@ if (currentCount >= staffCap.cap) {  // Block at exact cap, not above
     }
   }
 
-  // Assign the shift
-  this.generatedRoster[dateStr][shift] = name || null;
-  firebase.database().ref('generatedRoster').set(this.generatedRoster);
+  // Check AFTER assignment if we exceeded the cap
+this.generatedRoster[dateStr][shift] = name || null;
+
+// RECOUNT to verify we didn't exceed
+let newCount = 0;
+for (let day = 1; day <= daysInMonth; day++) {
+  const d = new Date(year, month, day);
+  const monthDateStr = d.toISOString().split('T')[0];
+  const roster = this.generatedRoster[monthDateStr];
+  if (!roster) continue;
+  if (roster.paraDay === name || roster.nurseDay === name || roster.paraNight === name || roster.nurseNight === name) {
+    newCount++;
+  }
+}
+
+// If we STILL exceed, reject it
+if (newCount > staffCap.cap) {
+  this.generatedRoster[dateStr][shift] = null;  // UNDO the assignment
+  alert(`${name} has reached their shift limit (${staffCap.cap} shifts max this month). Cannot assign more shifts.`);
   this.renderRosterCalendar();
+  return;
+}
+
+// Only NOW save to Firebase
+firebase.database().ref('generatedRoster').set(this.generatedRoster);
+this.renderRosterCalendar();
 }
 
   renderCalendar() {
