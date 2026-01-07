@@ -1679,6 +1679,15 @@ renderRosterSummary() {
     
     if (!entry) return;
     
+    const dayValue = entry['Day'];
+    const nightValue = entry['Night'];
+    
+    // TRAINING BLOCKER: If marked Training on EITHER shift, skip completely
+    if (dayValue === 'T' || nightValue === 'T') {
+      console.log(`  ${name} on ${dateStr}: TRAINING - BLOCKED`);
+      return; // Skip this person entirely
+    }
+    
     const value = entry[shiftType];
     
     console.log(`  ${name} on ${dateStr} ${shiftType}: ${value}`);
