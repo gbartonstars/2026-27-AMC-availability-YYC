@@ -741,14 +741,22 @@ class StaffScheduleApp {
     // Add shifts to day
     dayCell.appendChild(shiftsContainer);
 
-    // ===== CHECK FOR UNFILLED SHIFTS & HIGHLIGHT RED =====
+    // ===== CHECK FOR UNFILLED SHIFTS & CONFLICTS =====
     const emptyShifts = [];
     if (!entry.paraDay) emptyShifts.push('Para Day');
     if (!entry.nurseDay) emptyShifts.push('Nurse Day');
     if (!entry.paraNight) emptyShifts.push('Para Night');
     if (!entry.nurseNight) emptyShifts.push('Nurse Night');
 
-    if (emptyShifts.length > 0) {
+    // Check for conflicts (same person assigned to multiple shifts)
+    const assignedStaff = [entry.paraDay, entry.nurseDay, entry.paraNight, entry.nurseNight].filter(Boolean);
+    const staffCounts = {};
+    assignedStaff.forEach(name => {
+      staffCounts[name] = (staffCounts[name] || 0) + 1;
+    });
+    const hasConflicts = Object.values(staffCounts).some(count => count > 1);
+
+    if (hasConflicts || emptyShifts.length > 0) {
       dayCell.style.backgroundColor = '#ffcccc';
       dayCell.style.borderColor = '#ff0000';
       dayCell.style.borderWidth = '2px';
@@ -757,7 +765,11 @@ class StaffScheduleApp {
       warningLabel.style.color = '#ff0000';
       warningLabel.style.fontWeight = 'bold';
       warningLabel.style.marginTop = '4px';
-      warningLabel.textContent = '⚠️ ' + emptyShifts[0];
+      if (hasConflicts) {
+        warningLabel.textContent = '⚠️ CONFLICT';
+      } else {
+        warningLabel.textContent = '⚠️ ' + emptyShifts[0];
+      }
       dayCell.appendChild(warningLabel);
     }
 
