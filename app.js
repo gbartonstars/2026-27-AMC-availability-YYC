@@ -910,7 +910,7 @@ renderRosterSummary() {
       }
 
     // Check if adding this shift would exceed their cap
-    if (currentCount >= staffCap.cap) {
+    if (currentCount > staffCap.cap) {
       alert(
         `${name} has reached their shift limit (${staffCap.cap} shifts max this month). Cannot assign more shifts.`
       );
