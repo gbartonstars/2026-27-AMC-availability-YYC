@@ -888,18 +888,28 @@ renderRosterSummary() {
     }
 
     // Count how many shifts this person already has this month
-    let currentCount = 0;
-    Object.keys(this.generatedRoster).forEach(dateStr => {
-      const roster = this.generatedRoster[dateStr];
-      if (
-        roster.paraDay === name ||
-        roster.nurseDay === name ||
-        roster.paraNight === name ||
-        roster.nurseNight === name
-      ) {
-        currentCount++;
+    // COUNT ONLY SHIFTS IN THE CURRENT ROSTER MONTH
+      const year = this.rosterDate.getFullYear();
+      const month = this.rosterDate.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      let currentCount = 0;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(year, month, day);
+        const monthDateStr = d.toISOString().split('T')[0];
+        const roster = this.generatedRoster[monthDateStr];
+        
+        if (!roster) continue;
+        
+        if (
+          roster.paraDay === name ||
+          roster.nurseDay === name ||
+          roster.paraNight === name ||
+          roster.nurseNight === name
+        ) {
+          currentCount++;
+        }
       }
-    });
 
     // Check if adding this shift would exceed their cap
     if (currentCount >= staffCap.cap) {
