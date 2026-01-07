@@ -1885,6 +1885,51 @@ this.idealUsers.forEach(name => {
 
   alert(`Roster generated!\n✓ ${completelyFilledDays} days fully staffed\n⚠️ ${conflictDays} days with conflicts\n\nCheck console (F12) for details.`);
 }
+
+  assignShift(dateStr, shiftType, staffList, caps, shiftCounts) {
+    const eligible = [];
+
+    staffList.forEach(name => {
+      const availability = this.allAvailability[name] || {};
+      const entry = availability[dateStr];
+
+      if (!entry) return;
+
+      const dayValue = entry['Day'];
+      const nightValue = entry['Night'];
+
+      // TRAINING IS A HARD BLOCKER
+      if (dayValue === 'T' || nightValue === 'T') {
+        return;
+      }
+
+      let shiftValue = shiftType === 'Day' ? dayValue : nightValue;
+
+      if (!shiftValue || shiftValue === 'U' || shiftValue === 'V' || shiftValue === 'R' || shiftValue === 'K' || shiftValue === '') {
+        return;
+      }
+
+      const cap = caps[name];
+      if (!cap) return;
+
+      if (shiftCounts[name] >= cap.cap) {
+        return;
+      }
+
+      eligible.push({
+        name: name,
+        shiftCount: shiftCounts[name]
+      });
+    });
+
+    if (eligible.length === 0) {
+      return null;
+    }
+
+    eligible.sort((a, b) => a.shiftCount - b.shiftCount);
+
+    return eligible[0].name;
+  }
 loadRosterFromFirebase() {
     firebase.database().ref("generatedRoster").on('value', (snapshot) => {
       if (snapshot.exists()) {
