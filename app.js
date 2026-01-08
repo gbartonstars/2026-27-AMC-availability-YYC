@@ -635,287 +635,173 @@ if (exportRosterBtn) {
     shiftsContainer.style.gap = '4px';
 
     // ===== PARA DAY =====
-    const pdSelect = document.createElement('select');
-    pdSelect.style.width = '100%';
-    pdSelect.style.padding = '4px';
-    pdSelect.style.fontSize = '11px';
-    pdSelect.style.fontWeight = 'bold';
-    pdSelect.style.backgroundColor = '#f5f5f5';
-    pdSelect.style.border = '1px solid #999';
-    pdSelect.style.borderRadius = '3px';
-    pdSelect.innerHTML = '';
+const pdSelect = document.createElement('select');
+pdSelect.style.width = '100%';
+pdSelect.style.padding = '4px';
+pdSelect.style.fontSize = '11px';
+pdSelect.style.fontWeight = 'bold';
+pdSelect.style.backgroundColor = '#f5f5f5';
+pdSelect.style.border = '1px solid #999';
+pdSelect.style.borderRadius = '3px';
+pdSelect.innerHTML = '';
 
-    // Empty option
-    const pdEmptyOpt = document.createElement('option');
-    pdEmptyOpt.value = '';
-    pdEmptyOpt.textContent = '-- Select --';
-    pdEmptyOpt.style.backgroundColor = '#ffffff';
-    pdSelect.appendChild(pdEmptyOpt);
+// Empty option
+const pdEmptyOpt = document.createElement('option');
+pdEmptyOpt.value = '';
+pdEmptyOpt.textContent = '-- Select --';
+pdEmptyOpt.style.backgroundColor = '#ffffff';
+pdSelect.appendChild(pdEmptyOpt);
 
-    const pdAvailable = getAvailableForShift(dateStr, 'Day');
-    const pdAvailableSet = new Set(pdAvailable);
+const pdAvailable = getAvailableForShift(dateStr, 'Day');
+const pdAvailableSet = new Set(pdAvailable);
 
-    paraNames.forEach(name => {
-      const option = document.createElement('option');
-      option.value = name;
-      
-      const staffDays = this.allAvailability[name] || {};
-      const dayEntry = staffDays[dateStr];
-      const status = dayEntry?.Day || '';
-      
-      let displayText = name;
-      let bgColor = '#ffcccc';
-      let textColor = '#000';
-      
-      if (pdAvailableSet.has(name)) {
-        displayText = `${name} ✓`;
-        bgColor = '#90EE90';
-        textColor = '#000';
-      } else if (status === 'V') {
-        displayText = `${name} (Vacation)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      } else if (status === 'U') {
-        displayText = `${name} (Unavailable)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      } else if (status === 'T') {
-        displayText = `${name} (Training)`;
-        bgColor = '#ffeecc';
-        textColor = '#666';
-      } else if (status === 'K') {
-        displayText = `${name} (Sick)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      } else if (status === 'R') {
-        displayText = `${name} (Requested Off)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      }
-      
-      option.textContent = displayText;
-      option.style.backgroundColor = bgColor;
-      option.style.color = textColor;
-      option.style.fontWeight = 'bold';
-      
-      pdSelect.appendChild(option);
-    });
+paraNames.forEach(name => {
+  const option = document.createElement('option');
+  option.value = name;
+  option.textContent = name;
+  
+  // GREEN if available, RED if not
+  if (pdAvailableSet.has(name)) {
+    option.style.backgroundColor = '#90EE90';  // Green
+    option.style.color = '#000';
+  } else {
+    option.style.backgroundColor = '#ffcccc';  // Red
+    option.style.color = '#666';
+  }
+  option.style.fontWeight = 'bold';
+  
+  pdSelect.appendChild(option);
+});
 
-    pdSelect.value = entry.paraDay || '';
-    pdSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraDay', e.target.value));
-    shiftsContainer.appendChild(pdSelect);
+pdSelect.value = entry.paraDay || '';
+pdSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraDay', e.target.value));
+shiftsContainer.appendChild(pdSelect);
 
     // ===== NURSE DAY =====
-    const ndSelect = document.createElement('select');
-    ndSelect.style.width = '100%';
-    ndSelect.style.padding = '4px';
-    ndSelect.style.fontSize = '11px';
-    ndSelect.style.fontWeight = 'bold';
-    ndSelect.style.backgroundColor = '#f5f5f5';
-    ndSelect.style.border = '1px solid #999';
-    ndSelect.style.borderRadius = '3px';
-    ndSelect.innerHTML = '';
+const ndSelect = document.createElement('select');
+ndSelect.style.width = '100%';
+ndSelect.style.padding = '4px';
+ndSelect.style.fontSize = '11px';
+ndSelect.style.fontWeight = 'bold';
+ndSelect.style.backgroundColor = '#f5f5f5';
+ndSelect.style.border = '1px solid #999';
+ndSelect.style.borderRadius = '3px';
+ndSelect.innerHTML = '';
 
-    const ndEmptyOpt = document.createElement('option');
-    ndEmptyOpt.value = '';
-    ndEmptyOpt.textContent = '-- Select --';
-    ndEmptyOpt.style.backgroundColor = '#ffffff';
-    ndSelect.appendChild(ndEmptyOpt);
+const ndEmptyOpt = document.createElement('option');
+ndEmptyOpt.value = '';
+ndEmptyOpt.textContent = '-- Select --';
+ndEmptyOpt.style.backgroundColor = '#ffffff';
+ndSelect.appendChild(ndEmptyOpt);
 
-    const ndAvailable = getAvailableForShift(dateStr, 'Day');
-    const ndAvailableSet = new Set(ndAvailable);
+const ndAvailable = getAvailableForShift(dateStr, 'Day');
+const ndAvailableSet = new Set(ndAvailable);
 
-    rnNames.forEach(name => {
-      const option = document.createElement('option');
-      option.value = name;
-      
-      const staffDays = this.allAvailability[name] || {};
-      const dayEntry = staffDays[dateStr];
-      const status = dayEntry?.Day || '';
-      
-      let displayText = name;
-      let bgColor = '#ffcccc';
-      let textColor = '#000';
-      
-      if (ndAvailableSet.has(name)) {
-        displayText = `${name} ✓`;
-        bgColor = '#90EE90';
-        textColor = '#000';
-      } else if (status === 'V') {
-        displayText = `${name} (Vacation)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      } else if (status === 'U') {
-        displayText = `${name} (Unavailable)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      } else if (status === 'T') {
-        displayText = `${name} (Training)`;
-        bgColor = '#ffeecc';
-        textColor = '#666';
-      } else if (status === 'K') {
-        displayText = `${name} (Sick)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      } else if (status === 'R') {
-        displayText = `${name} (Requested Off)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      }
-      
-      option.textContent = displayText;
-      option.style.backgroundColor = bgColor;
-      option.style.color = textColor;
-      option.style.fontWeight = 'bold';
-      
-      ndSelect.appendChild(option);
-    });
+rnNames.forEach(name => {
+  const option = document.createElement('option');
+  option.value = name;
+  option.textContent = name;
+  
+  // GREEN if available, RED if not
+  if (ndAvailableSet.has(name)) {
+    option.style.backgroundColor = '#90EE90';  // Green
+    option.style.color = '#000';
+  } else {
+    option.style.backgroundColor = '#ffcccc';  // Red
+    option.style.color = '#666';
+  }
+  option.style.fontWeight = 'bold';
+  
+  ndSelect.appendChild(option);
+});
 
-    ndSelect.value = entry.nurseDay || '';
-    ndSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseDay', e.target.value));
-    shiftsContainer.appendChild(ndSelect);
+ndSelect.value = entry.nurseDay || '';
+ndSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseDay', e.target.value));
+shiftsContainer.appendChild(ndSelect);
 
     // ===== PARA NIGHT =====
-    const pnSelect = document.createElement('select');
-    pnSelect.style.width = '100%';
-    pnSelect.style.padding = '4px';
-    pnSelect.style.fontSize = '11px';
-    pnSelect.style.fontWeight = 'bold';
-    pnSelect.style.backgroundColor = '#f5f5f5';
-    pnSelect.style.border = '1px solid #999';
-    pnSelect.style.borderRadius = '3px';
-    pnSelect.innerHTML = '';
+const pnSelect = document.createElement('select');
+pnSelect.style.width = '100%';
+pnSelect.style.padding = '4px';
+pnSelect.style.fontSize = '11px';
+pnSelect.style.fontWeight = 'bold';
+pnSelect.style.backgroundColor = '#f5f5f5';
+pnSelect.style.border = '1px solid #999';
+pnSelect.style.borderRadius = '3px';
+pnSelect.innerHTML = '';
 
-    const pnEmptyOpt = document.createElement('option');
-    pnEmptyOpt.value = '';
-    pnEmptyOpt.textContent = '-- Select --';
-    pnEmptyOpt.style.backgroundColor = '#ffffff';
-    pnSelect.appendChild(pnEmptyOpt);
+const pnEmptyOpt = document.createElement('option');
+pnEmptyOpt.value = '';
+pnEmptyOpt.textContent = '-- Select --';
+pnEmptyOpt.style.backgroundColor = '#ffffff';
+pnSelect.appendChild(pnEmptyOpt);
 
-    const pnAvailable = getAvailableForShift(dateStr, 'Night');
-    const pnAvailableSet = new Set(pnAvailable);
+const pnAvailable = getAvailableForShift(dateStr, 'Night');
+const pnAvailableSet = new Set(pnAvailable);
 
-    paraNames.forEach(name => {
-      const option = document.createElement('option');
-      option.value = name;
-      
-      const staffDays = this.allAvailability[name] || {};
-      const nightEntry = staffDays[dateStr];
-      const status = nightEntry?.Night || '';
-      
-      let displayText = name;
-      let bgColor = '#ffcccc';
-      let textColor = '#000';
-      
-      if (pnAvailableSet.has(name)) {
-        displayText = `${name} ✓`;
-        bgColor = '#90EE90';
-        textColor = '#000';
-      } else if (status === 'V') {
-        displayText = `${name} (Vacation)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      } else if (status === 'U') {
-        displayText = `${name} (Unavailable)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      } else if (status === 'T') {
-        displayText = `${name} (Training)`;
-        bgColor = '#ffeecc';
-        textColor = '#666';
-      } else if (status === 'K') {
-        displayText = `${name} (Sick)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      } else if (status === 'R') {
-        displayText = `${name} (Requested Off)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      }
-      
-      option.textContent = displayText;
-      option.style.backgroundColor = bgColor;
-      option.style.color = textColor;
-      option.style.fontWeight = 'bold';
-      
-      pnSelect.appendChild(option);
-    });
+paraNames.forEach(name => {
+  const option = document.createElement('option');
+  option.value = name;
+  option.textContent = name;
+  
+  // GREEN if available, RED if not
+  if (pnAvailableSet.has(name)) {
+    option.style.backgroundColor = '#90EE90';  // Green
+    option.style.color = '#000';
+  } else {
+    option.style.backgroundColor = '#ffcccc';  // Red
+    option.style.color = '#666';
+  }
+  option.style.fontWeight = 'bold';
+  
+  pnSelect.appendChild(option);
+});
 
-    pnSelect.value = entry.paraNight || '';
-    pnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraNight', e.target.value));
-    shiftsContainer.appendChild(pnSelect);
+pnSelect.value = entry.paraNight || '';
+pnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraNight', e.target.value));
+shiftsContainer.appendChild(pnSelect);
 
     // ===== NURSE NIGHT =====
-    const nnSelect = document.createElement('select');
-    nnSelect.style.width = '100%';
-    nnSelect.style.padding = '4px';
-    nnSelect.style.fontSize = '11px';
-    nnSelect.style.fontWeight = 'bold';
-    nnSelect.style.backgroundColor = '#f5f5f5';
-    nnSelect.style.border = '1px solid #999';
-    nnSelect.style.borderRadius = '3px';
-    nnSelect.innerHTML = '';
+const nnSelect = document.createElement('select');
+nnSelect.style.width = '100%';
+nnSelect.style.padding = '4px';
+nnSelect.style.fontSize = '11px';
+nnSelect.style.fontWeight = 'bold';
+nnSelect.style.backgroundColor = '#f5f5f5';
+nnSelect.style.border = '1px solid #999';
+nnSelect.style.borderRadius = '3px';
+nnSelect.innerHTML = '';
 
-    const nnEmptyOpt = document.createElement('option');
-    nnEmptyOpt.value = '';
-    nnEmptyOpt.textContent = '-- Select --';
-    nnEmptyOpt.style.backgroundColor = '#ffffff';
-    nnSelect.appendChild(nnEmptyOpt);
+const nnEmptyOpt = document.createElement('option');
+nnEmptyOpt.value = '';
+nnEmptyOpt.textContent = '-- Select --';
+nnEmptyOpt.style.backgroundColor = '#ffffff';
+nnSelect.appendChild(nnEmptyOpt);
 
-    const nnAvailable = getAvailableForShift(dateStr, 'Night');
-    const nnAvailableSet = new Set(nnAvailable);
+const nnAvailable = getAvailableForShift(dateStr, 'Night');
+const nnAvailableSet = new Set(nnAvailable);
 
-    rnNames.forEach(name => {
-      const option = document.createElement('option');
-      option.value = name;
-      
-      const staffDays = this.allAvailability[name] || {};
-      const nightEntry = staffDays[dateStr];
-      const status = nightEntry?.Night || '';
-      
-      let displayText = name;
-      let bgColor = '#ffcccc';
-      let textColor = '#000';
-      
-      if (nnAvailableSet.has(name)) {
-        displayText = `${name} ✓`;
-        bgColor = '#90EE90';
-        textColor = '#000';
-      } else if (status === 'V') {
-        displayText = `${name} (Vacation)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      } else if (status === 'U') {
-        displayText = `${name} (Unavailable)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      } else if (status === 'T') {
-        displayText = `${name} (Training)`;
-        bgColor = '#ffeecc';
-        textColor = '#666';
-      } else if (status === 'K') {
-        displayText = `${name} (Sick)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      } else if (status === 'R') {
-        displayText = `${name} (Requested Off)`;
-        bgColor = '#ffcccc';
-        textColor = '#666';
-      }
-      
-      option.textContent = displayText;
-      option.style.backgroundColor = bgColor;
-      option.style.color = textColor;
-      option.style.fontWeight = 'bold';
-      
-      nnSelect.appendChild(option);
-    });
+rnNames.forEach(name => {
+  const option = document.createElement('option');
+  option.value = name;
+  option.textContent = name;
+  
+  // GREEN if available, RED if not
+  if (nnAvailableSet.has(name)) {
+    option.style.backgroundColor = '#90EE90';  // Green
+    option.style.color = '#000';
+  } else {
+    option.style.backgroundColor = '#ffcccc';  // Red
+    option.style.color = '#666';
+  }
+  option.style.fontWeight = 'bold';
+  
+  nnSelect.appendChild(option);
+});
 
-    nnSelect.value = entry.nurseNight || '';
-    nnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseNight', e.target.value));
-    shiftsContainer.appendChild(nnSelect);
-
-    dayCell.appendChild(shiftsContainer);
+nnSelect.value = entry.nurseNight || '';
+nnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseNight', e.target.value));
+shiftsContainer.appendChild(nnSelect);
 
     // Check for empty shifts
     const emptyShifts = [];
@@ -1013,22 +899,44 @@ renderRosterSummary() {
   const summaryEl = document.getElementById('rosterSummary');
   if (!summaryEl) return;
   
-  const counts = this.getRosterCountsForMonth();
-  const minimumTable = this.rosterDate.getMonth() + 1 === 31 || (this.rosterDate.getMonth() + 1) % 12 === 2 
-    ? this.minimumRequired31 
-    : this.minimumRequired30;
+  const year = this.rosterDate.getFullYear();
+  const month = this.rosterDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
   
+  const counts = this.getRosterCountsForMonth();
+  const minimumTable = daysInMonth === 31 ? this.minimumRequired31 : this.minimumRequired30;
+  
+  // Count vacation days for each person THIS MONTH
+  const vacationCounts = {};
   const allStaff = [
     "Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant",
     "Dave Allison", "Mackenzie Wardle", "Chad Hegge", "Ken King", "John Doyle", "Bob Odney",
     "Kris Austin", "Kellie Ann Vogelaar", "Janice Kirkham", "Flo Butler", "Jodi Scott", "Carolyn Hogan", "Michelle Sexsmith"
   ];
 
+  allStaff.forEach(name => {
+    vacationCounts[name] = 0;
+  });
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const dateStr = d.toISOString().split('T')[0];
+    const entry = this.allAvailability[name]?.[dateStr];
+    
+    allStaff.forEach(name => {
+      const staffEntry = this.allAvailability[name]?.[dateStr];
+      if (staffEntry?.Day === "V") {
+        vacationCounts[name]++;
+      }
+    });
+  }
+
   let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
   html += '<thead><tr style="background: #333; color: white;">';
   html += '<th style="padding: 8px; border: 1px solid #999;">Staff</th>';
   html += '<th style="padding: 8px; border: 1px solid #999;">Target</th>';
-  html += '<th style="padding: 8px; border: 1px solid #999;">Total</th>';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Vacation</th>';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Total Shifts</th>';
   html += '<th style="padding: 8px; border: 1px solid #999;">Day</th>';
   html += '<th style="padding: 8px; border: 1px solid #999;">Night</th>';
   html += '<th style="padding: 8px; border: 1px solid #999;">Weekend</th>';
@@ -1038,6 +946,7 @@ renderRosterSummary() {
   allStaff.forEach(name => {
     const c = counts[name] || { total: 0, day: 0, night: 0, weekend: 0 };
     const target = minimumTable[name] || 0;
+    const vacation = vacationCounts[name] || 0;
     const gap = Math.max(0, target - c.total);
     
     // Highlight row in LIGHT RED if deficiency
@@ -1048,6 +957,7 @@ renderRosterSummary() {
     html += `<tr style="background: ${rowBg};">`;
     html += `<td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">${name}</td>`;
     html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold;">${target}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; color: #ff6666; font-weight: bold;">${vacation}</td>`;
     html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; color: ${gapColor}; font-weight: bold;">${c.total}${gapText}</td>`;
     html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${c.day}</td>`;
     html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${c.night}</td>`;
