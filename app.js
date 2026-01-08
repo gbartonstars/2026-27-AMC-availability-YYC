@@ -864,87 +864,69 @@ renderRosterSummary() {
 }
   // Update roster cell and save
   updateRosterCell(dateStr, shift, name) {
+  const year = this.rosterDate.getFullYear();
+  const month = this.rosterDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Initialize if needed
   if (!this.generatedRoster[dateStr]) {
-    this.generatedRoster[dateStr] = {
-      paraDay: null,
-      nurseDay: null,
-      paraNight: null,
+    this.generatedRoster[dateStr] = { 
+      paraDay: null, 
+      nurseDay: null, 
+      paraNight: null, 
       nurseNight: null,
       conflicts: false
     };
   }
 
-  // If assigning a staff member, check their monthly cap
-  if (name && name.trim() !== '') {
-    const caps = this.getMonthlyCapsForCurrentMonth();
-    const staffCap = caps[name];
-
-    if (!staffCap) {
-      alert(`No cap found for ${name}`);
-      this.renderRosterCalendar();
-      return;
-    }
-
-    // Count how many shifts this person already has this month
-    // COUNT ONLY SHIFTS IN THE CURRENT ROSTER MONTH
-      const year = this.rosterDate.getFullYear();
-      const month = this.rosterDate.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-      let currentCount = 0;
-      for (let day = 1; day <= daysInMonth; day++) {
-        const d = new Date(year, month, day);
-        const monthDateStr = d.toISOString().split('T')[0];
-        const roster = this.generatedRoster[monthDateStr];
-        
-        if (!roster) continue;
-        
-        if (
-          roster.paraDay === name ||
-          roster.nurseDay === name ||
-          roster.paraNight === name ||
-          roster.nurseNight === name
-        ) {
-          currentCount++;
-        }
-      }
-
-    // Check if adding this shift would exceed their cap
-if (currentCount >= staffCap.cap) {  // Block at exact cap, not above
-      alert(
-        `${name} has reached their shift limit (${staffCap.cap} shifts max this month). Cannot assign more shifts.`
-      );
-      this.renderRosterCalendar();
-      return;
+  const entry = this.generatedRoster[dateStr];
+  
+  // Count CURRENT shifts for this person (BEFORE any changes)
+  let currentCount = 0;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const dateStrDay = d.toISOString().split('T')[0];
+    const roster = this.generatedRoster[dateStrDay];
+    if (!roster) continue;
+    
+    // Count if this person is assigned to any shift on this day
+    if (roster.paraDay === name || roster.nurseDay === name || 
+        roster.paraNight === name || roster.nurseNight === name) {
+      currentCount++;
     }
   }
 
-  // Check AFTER assignment if we exceeded the cap
-this.generatedRoster[dateStr][shift] = name || null;
+  // Get the cap for this month
+  const minimumTable = daysInMonth === 31 ? this.minimumRequired31 : this.minimumRequired30;
+  const staffCap = minimumTable[name] || 0;
 
-// RECOUNT to verify we didn't exceed
-let newCount = 0;
-for (let day = 1; day <= daysInMonth; day++) {
-  const d = new Date(year, month, day);
-  const monthDateStr = d.toISOString().split('T')[0];
-  const roster = this.generatedRoster[monthDateStr];
-  if (!roster) continue;
-  if (roster.paraDay === name || roster.nurseDay === name || roster.paraNight === name || roster.nurseNight === name) {
-    newCount++;
+  // If trying to ASSIGN (not clear), and already at cap, BLOCK
+  if (name && currentCount >= staffCap) {
+    alert(`${name} has reached their shift limit (${staffCap} shifts max this month). Cannot assign more shifts.`);
+    // Reset the dropdown to its previous value
+    this.renderRosterCalendar();
+    return; // Block the assignment
   }
-}
 
-// If we STILL exceed, reject it
-if (newCount > staffCap.cap) {
-  this.generatedRoster[dateStr][shift] = null;  // UNDO the assignment
-  alert(`${name} has reached their shift limit (${staffCap.cap} shifts max this month). Cannot assign more shifts.`);
+  // OK to proceed - assign the shift locally
+  this.generatedRoster[dateStr][shift] = name || null;
+
+  // CRITICAL: Use .update() instead of .set() to avoid Firebase listener conflicts
+  // This updates ONLY this date entry, not the entire roster
+  const updatePayload = {};
+  updatePayload[dateStr] = this.generatedRoster[dateStr];
+  
+  firebase.database().ref('generatedRoster').update(updatePayload)
+    .catch(error => {
+      console.error('Error updating roster:', error);
+      // Revert on Firebase error
+      this.generatedRoster[dateStr][shift] = null;
+      alert('Error saving to database. Assignment cancelled.');
+    });
+
+  // Re-render calendar to show updated dropdowns
   this.renderRosterCalendar();
-  return;
-}
-
-// Only NOW save to Firebase
-firebase.database().ref('generatedRoster').set(this.generatedRoster);
-this.renderRosterCalendar();
+  this.renderRosterSummary();
 }
 
   renderCalendar() {
