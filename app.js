@@ -1024,27 +1024,51 @@ renderRosterSummary() {
   }
 
   getIdealTotalsForCurrentMonth() {
-    const year  = this.idealDate.getFullYear();
-    const month = this.idealDate.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const year = this.idealDate.getFullYear();
+  const month = this.idealDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const counts = {};
 
-    const totals = {}; // name -> { day: 0, night: 0 }
-    const idealUsers = ["Greg Barton","Scott McTaggart","Stuart Grant","Graham Newton"];
+  // Initialize all ideal users
+  const idealUsers = ["Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant"];
+  idealUsers.forEach(name => {
+    counts[name] = { idealDay: 0, idealNight: 0, vacation: 0, total: 0 };
+  });
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      const d = new Date(year, month, day);
-      const dateStr = d.toISOString().split('T')[0];
-
-      idealUsers.forEach(name => {
-        const entry = (this.idealAvailability[name] && this.idealAvailability[name][dateStr]) || {};
-        if (!totals[name]) totals[name] = { day: 0, night: 0 };
-
-        if (entry.Day === 'D' || entry.Day === 'T' || entry.Day === 'V') totals[name].day += 1;
-        if (entry.Night === 'N' || entry.Night === 'T' || entry.Night === 'V') totals[name].night += 1;
-      });
-    }
-    return totals;
+  // Count ONLY "D" (Ideal Day), "N" (Ideal Night), and "V" (Vacation)
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const dateStr = d.toISOString().split('T')[0];
+    
+    idealUsers.forEach(name => {
+      const entry = this.idealAvailability[name]?.[dateStr];
+      if (!entry) return;
+      
+      // Count Ideal Day
+      if (entry.Day === "D") {
+        counts[name].idealDay++;
+        counts[name].total++;
+      }
+      
+      // Count Ideal Night (only if NOT already scheduled for day)
+      if (entry.Night === "N") {
+        const dayValue = entry.Day;
+        if (dayValue !== "D") {
+          counts[name].idealNight++;
+          counts[name].total++;
+        }
+      }
+      
+      // Count Vacation (V) - Reduces shifts owed but COUNTS toward total days
+      if (entry.Day === "V") {
+        counts[name].vacation++;
+        counts[name].total++;
+      }
+    });
   }
+
+  return counts;
+}
   
   renderIdealCalendar() {
     const calendarEl = document.getElementById('idealCalendar');
