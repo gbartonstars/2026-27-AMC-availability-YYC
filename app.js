@@ -1610,12 +1610,12 @@ renderRosterSummary() {
   const month = this.rosterDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Initialize generatedRoster with structure for all days
-  this.generatedRoster = {};
+  // CLEAR OLD ROSTER FOR THIS MONTH ONLY (FIX #1: prevent persistence issues)
+  const monthRoster = {};
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
     const dateStr = d.toISOString().split("T")[0];
-    this.generatedRoster[dateStr] = {
+    monthRoster[dateStr] = {
       paraDay: null,
       nurseDay: null,
       paraNight: null,
@@ -1642,7 +1642,7 @@ renderRosterSummary() {
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
     const dateStr = d.toISOString().split("T")[0];
-    const roster = this.generatedRoster[dateStr];
+    const roster = monthRoster[dateStr];
 
     const idealUsers = ["Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant"];
     idealUsers.forEach(name => {
@@ -1724,38 +1724,24 @@ renderRosterSummary() {
     return available.sort();
   };
 
-  const isDoubleShifted = (name, dateStr, shiftType) => {
-    const roster = this.generatedRoster[dateStr];
-    if (shiftType === "paraDay" || shiftType === "paraNight") {
-      return roster.paraDay === name && roster.paraNight === name;
-    } else if (shiftType === "nurseDay" || shiftType === "nurseNight") {
-      return roster.nurseDay === name && roster.nurseNight === name;
-    }
-    return false;
+  // FIX #2: PREVENT SAME PERSON ON BOTH DAY AND NIGHT SHIFTS
+  const isAlreadyScheduledOnDate = (name, dateStr) => {
+    const roster = monthRoster[dateStr];
+    return roster.paraDay === name || roster.paraNight === name || roster.nurseDay === name || roster.nurseNight === name;
   };
 
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
     const dateStr = d.toISOString().split("T")[0];
 
-    if (!this.generatedRoster[dateStr]) {
-      this.generatedRoster[dateStr] = {
-        paraDay: null,
-        nurseDay: null,
-        paraNight: null,
-        nurseNight: null,
-        conflicts: false
-      };
-    }
-
-    const roster = this.generatedRoster[dateStr];
+    const roster = monthRoster[dateStr];
 
     // ===== PARA DAY =====
     if (!roster.paraDay) {
       const available = getStaffAvailableForShift(dateStr, "Day")
         .filter(name => paraNames.has(name))
         .filter(name => !idealPlaced[name] || !idealPlaced[name].has(dateStr))
-        .filter(name => !isDoubleShifted(name, dateStr, "paraDay"))
+        .filter(name => !isAlreadyScheduledOnDate(name, dateStr))  // FIX #2
         .sort((a, b) => adjustedRequirements[a].assigned - adjustedRequirements[b].assigned);
 
       if (available.length > 0) {
@@ -1772,7 +1758,7 @@ renderRosterSummary() {
       const available = getStaffAvailableForShift(dateStr, "Day")
         .filter(name => rnNames.has(name))
         .filter(name => !idealPlaced[name] || !idealPlaced[name].has(dateStr))
-        .filter(name => !isDoubleShifted(name, dateStr, "nurseDay"))
+        .filter(name => !isAlreadyScheduledOnDate(name, dateStr))  // FIX #2
         .sort((a, b) => adjustedRequirements[a].assigned - adjustedRequirements[b].assigned);
 
       if (available.length > 0) {
@@ -1789,7 +1775,7 @@ renderRosterSummary() {
       const available = getStaffAvailableForShift(dateStr, "Night")
         .filter(name => paraNames.has(name))
         .filter(name => !idealPlaced[name] || !idealPlaced[name].has(dateStr))
-        .filter(name => !isDoubleShifted(name, dateStr, "paraNight"))
+        .filter(name => !isAlreadyScheduledOnDate(name, dateStr))  // FIX #2
         .sort((a, b) => adjustedRequirements[a].assigned - adjustedRequirements[b].assigned);
 
       if (available.length > 0) {
@@ -1806,7 +1792,7 @@ renderRosterSummary() {
       const available = getStaffAvailableForShift(dateStr, "Night")
         .filter(name => rnNames.has(name))
         .filter(name => !idealPlaced[name] || !idealPlaced[name].has(dateStr))
-        .filter(name => !isDoubleShifted(name, dateStr, "nurseNight"))
+        .filter(name => !isAlreadyScheduledOnDate(name, dateStr))  // FIX #2
         .sort((a, b) => adjustedRequirements[a].assigned - adjustedRequirements[b].assigned);
 
       if (available.length > 0) {
@@ -1828,8 +1814,14 @@ renderRosterSummary() {
     console.log(`${name}: target=${req.target}, assigned=${req.assigned}`);
   });
 
+  // FIX #3: MERGE with existing rosters, don't overwrite
+  const updatedRoster = { ...this.generatedRoster, ...monthRoster };
+  
   // Save to Firebase
-  firebase.database().ref("generatedRoster").set(this.generatedRoster);
+  firebase.database().ref("generatedRoster").set(updatedRoster);
+  
+  // Update local copy
+  this.generatedRoster = updatedRoster;
 
   // Render the roster
   this.renderRosterCalendar();
