@@ -1191,18 +1191,22 @@ renderRosterSummary() {
   html += '<th style="padding: 8px; border: 1px solid #999;">Ideal Day</th>';
   html += '<th style="padding: 8px; border: 1px solid #999;">Ideal Night</th>';
   html += '<th style="padding: 8px; border: 1px solid #999;">Vacation</th>';
-  html += '<th style="padding: 8px; border: 1px solid #999;">Total Days</th>';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Shifts Required</th>';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Total Days Accounted</th>';
   html += '</tr></thead>';
   html += '<tbody>';
   
   idealUsers.forEach(name => {
     const c = counts[name] || { idealDay: 0, idealNight: 0, vacation: 0, total: 0 };
+    const shiftsRequired = c.idealDay + c.idealNight;
+    
     html += '<tr style="background: #f9f9f9;">';
     html += `<td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">${name}</td>`;
     html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${c.idealDay}</td>`;
     html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${c.idealNight}</td>`;
-    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; color: #ff6666;">${c.vacation}</td>`;
-    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold; background: #ffffcc;">${c.total}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; color: #ff6666; font-weight: bold;">${c.vacation}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; background: #ffffcc; font-weight: bold;">${shiftsRequired}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold;">${c.total}</td>`;
     html += '</tr>';
   });
   
@@ -1775,9 +1779,8 @@ renderRosterSummary() {
   const month = this.rosterDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  console.log("=== ROSTER GENERATION START ===");
+  console.log("=== AI-OPTIMIZED ROSTER GENERATION START ===");
   console.log(`Month: ${this.monthNames[month]} ${year}`);
-  console.log(`Days in month: ${daysInMonth}`);
 
   const rnNames = new Set(["Graham Newton", "Stuart Grant", "Kris Austin", "Kellie Ann Vogelaar", "Janice Kirkham", "Flo Butler", "Jodi Scott", "Carolyn Hogan", "Michelle Sexsmith"]);
   const paraNames = new Set(["Greg Barton", "Scott McTaggart", "Dave Allison", "Mackenzie Wardle", "Chad Hegge", "Ken King", "John Doyle", "Bob Odney"]);
@@ -1806,7 +1809,6 @@ renderRosterSummary() {
   allStaff.forEach(name => {
     const baseCap = minimumTable[name] || 0;
     
-    // Count vacation days
     const vacationDays = new Set();
     for (let day = 1; day <= daysInMonth; day++) {
       const d = new Date(year, month, day);
@@ -1837,8 +1839,6 @@ renderRosterSummary() {
       const entry = this.allAvailability[name]?.[dateStr];
       if (!entry) return;
       const value = entry[shiftType];
-      // Available = A (available), S (scheduled), or blank (empty)
-      // NOT available = V (vacation), U (unavailable), T (training), K (sick), R (requested off)
       if (value === "A" || value === "S" || value === "") {
         available.push(name);
       }
@@ -1869,7 +1869,6 @@ renderRosterSummary() {
 
       const isRN = rnNames.has(name);
 
-      // Place Ideal Day (D)
       if (idealEntry.Day === "D") {
         const shiftKey = isRN ? "nurseDay" : "paraDay";
         if (!roster[shiftKey]) {
@@ -1881,7 +1880,6 @@ renderRosterSummary() {
         }
       }
 
-      // Place Ideal Night (N) - only if NOT already on day shift same date
       if (idealEntry.Night === "N") {
         const shiftKey = isRN ? "nurseNight" : "paraNight";
         if (!roster[shiftKey] && !staffStats[name].datesAssigned.has(dateStr)) {
@@ -1897,16 +1895,125 @@ renderRosterSummary() {
 
   console.log(`Placed ${idealPlaced} ideal shifts`);
 
-  // ===== STEP 4: Fill remaining shifts =====
-  console.log("=== STEP 4: Fill remaining shifts ===");
-  let filledCount = 0;
+  // ===== STEP 4: AI-OPTIMIZED SHIFT ASSIGNMENT WITH SMART CLUSTERING =====
+  console.log("=== STEP 4: AI-Optimized Assignment with Smart Clustering ===");
+
+  // For each non-ideal staff member, find optimal work clusters
+  const nonIdealStaff = allStaff.filter(name => !idealUsers.includes(name));
+  
+  nonIdealStaff.forEach(name => {
+    if (hasMetTarget(name)) return;
+    
+    const shiftsNeeded = staffStats[name].target - staffStats[name].assigned;
+    if (shiftsNeeded <= 0) return;
+
+    // Find all available dates for this person
+    const availableDates = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      const dateStr = d.toISOString().split("T")[0];
+      
+      if (!staffStats[name].datesAssigned.has(dateStr)) {
+        const isRN = rnNames.has(name);
+        const dayAvailable = getStaffAvailableForShift(dateStr, "Day").includes(name);
+        const nightAvailable = getStaffAvailableForShift(dateStr, "Night").includes(name);
+        
+        if (dayAvailable || nightAvailable) {
+          availableDates.push({
+            dateStr,
+            dayNum: day,
+            dayAvailable,
+            nightAvailable,
+            isUnfilled: !monthRoster[dateStr].paraDay || !monthRoster[dateStr].nurseDay || 
+                        !monthRoster[dateStr].paraNight || !monthRoster[dateStr].nurseNight
+          });
+        }
+      }
+    }
+
+    // AI: Find consecutive date clusters
+    const clusters = [];
+    let currentCluster = [];
+    
+    for (let i = 0; i < availableDates.length; i++) {
+      const current = availableDates[i];
+      
+      if (currentCluster.length === 0) {
+        currentCluster.push(current);
+      } else {
+        const lastDate = currentCluster[currentCluster.length - 1];
+        // If consecutive or within 1 day, add to cluster
+        if (current.dayNum - lastDate.dayNum <= 1) {
+          currentCluster.push(current);
+        } else {
+          // Start new cluster
+          clusters.push([...currentCluster]);
+          currentCluster = [current];
+        }
+      }
+    }
+    if (currentCluster.length > 0) clusters.push(currentCluster);
+
+    // Sort clusters by: unfilled shifts first (helps reduce deficiencies), then by size
+    clusters.sort((a, b) => {
+      const aUnfilled = a.filter(d => d.isUnfilled).length;
+      const bUnfilled = b.filter(d => d.isUnfilled).length;
+      if (aUnfilled !== bUnfilled) return bUnfilled - aUnfilled;
+      return b.length - a.length;
+    });
+
+    // Assign shifts from clusters
+    const isRN = rnNames.has(name);
+    let shiftsAssigned = 0;
+
+    for (const cluster of clusters) {
+      for (const dateInfo of cluster) {
+        if (shiftsAssigned >= shiftsNeeded) break;
+        if (staffStats[name].datesAssigned.has(dateInfo.dateStr)) continue;
+
+        const roster = monthRoster[dateInfo.dateStr];
+
+        // Try day shift
+        if (dateInfo.dayAvailable && shiftsAssigned < shiftsNeeded) {
+          const shiftKey = isRN ? "nurseDay" : "paraDay";
+          if (!roster[shiftKey]) {
+            roster[shiftKey] = name;
+            staffStats[name].assigned += 1;
+            staffStats[name].datesAssigned.add(dateInfo.dateStr);
+            shiftsAssigned += 1;
+            console.log(`  ✓ ${name} clustered Day ${dateInfo.dateStr}`);
+          }
+        }
+
+        // Try night shift (same date, only if not on day)
+        if (dateInfo.nightAvailable && shiftsAssigned < shiftsNeeded && !staffStats[name].datesAssigned.has(dateInfo.dateStr)) {
+          const shiftKey = isRN ? "nurseNight" : "paraNight";
+          if (!roster[shiftKey]) {
+            roster[shiftKey] = name;
+            staffStats[name].assigned += 1;
+            staffStats[name].datesAssigned.add(dateInfo.dateStr);
+            shiftsAssigned += 1;
+            console.log(`  ✓ ${name} clustered Night ${dateInfo.dateStr}`);
+          }
+        }
+      }
+      
+      if (shiftsAssigned >= shiftsNeeded) break;
+    }
+
+    console.log(`  ${name}: assigned ${shiftsAssigned}/${shiftsNeeded} (clustered strategy)`);
+  });
+
+  // ===== STEP 5: Fill remaining critical gaps =====
+  console.log("=== STEP 5: Fill Critical Gaps ===");
+  let gapsFilled = 0;
 
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
     const dateStr = d.toISOString().split("T")[0];
     const roster = monthRoster[dateStr];
 
-    // ===== PARA DAY =====
+    // PARA DAY
     if (!roster.paraDay) {
       let available = getStaffAvailableForShift(dateStr, "Day")
         .filter(name => paraNames.has(name))
@@ -1918,11 +2025,11 @@ renderRosterSummary() {
         roster.paraDay = available[0];
         staffStats[available[0]].assigned += 1;
         staffStats[available[0]].datesAssigned.add(dateStr);
-        filledCount++;
+        gapsFilled++;
       }
     }
 
-    // ===== NURSE DAY =====
+    // NURSE DAY
     if (!roster.nurseDay) {
       let available = getStaffAvailableForShift(dateStr, "Day")
         .filter(name => rnNames.has(name))
@@ -1934,11 +2041,11 @@ renderRosterSummary() {
         roster.nurseDay = available[0];
         staffStats[available[0]].assigned += 1;
         staffStats[available[0]].datesAssigned.add(dateStr);
-        filledCount++;
+        gapsFilled++;
       }
     }
 
-    // ===== PARA NIGHT =====
+    // PARA NIGHT
     if (!roster.paraNight) {
       let available = getStaffAvailableForShift(dateStr, "Night")
         .filter(name => paraNames.has(name))
@@ -1950,11 +2057,11 @@ renderRosterSummary() {
         roster.paraNight = available[0];
         staffStats[available[0]].assigned += 1;
         staffStats[available[0]].datesAssigned.add(dateStr);
-        filledCount++;
+        gapsFilled++;
       }
     }
 
-    // ===== NURSE NIGHT =====
+    // NURSE NIGHT
     if (!roster.nurseNight) {
       let available = getStaffAvailableForShift(dateStr, "Night")
         .filter(name => rnNames.has(name))
@@ -1966,24 +2073,25 @@ renderRosterSummary() {
         roster.nurseNight = available[0];
         staffStats[available[0]].assigned += 1;
         staffStats[available[0]].datesAssigned.add(dateStr);
-        filledCount++;
+        gapsFilled++;
       }
     }
   }
 
-  console.log(`Filled ${filledCount} remaining shifts`);
+  console.log(`Filled ${gapsFilled} critical gaps`);
 
-  // ===== STEP 5: Summary & Save =====
+  // ===== STEP 6: Summary & Save =====
   console.log("=== FINAL SUMMARY ===");
   let unmetCount = 0;
   allStaff.forEach(name => {
     const stat = staffStats[name];
-    const status = stat.assigned >= stat.target ? "✓" : "⚠";
-    if (stat.assigned < stat.target) unmetCount++;
-    console.log(`${status} ${name}: target=${stat.target}, assigned=${stat.assigned}, gap=${stat.target - stat.assigned}`);
+    const gap = stat.target - stat.assigned;
+    const status = gap <= 0 ? "✓" : "⚠";
+    if (gap > 0) unmetCount++;
+    console.log(`${status} ${name}: target=${stat.target}, assigned=${stat.assigned}, gap=${gap}`);
   });
 
-  // Merge with existing rosters (preserve other months)
+  // Merge with existing rosters
   const updatedRoster = { ...this.generatedRoster, ...monthRoster };
   
   // Save to Firebase
@@ -1994,9 +2102,11 @@ renderRosterSummary() {
   this.renderRosterCalendar();
   this.renderRosterSummary();
 
-  console.log(`${unmetCount} staff members have unmet targets`);
+  console.log(`\n=== CLUSTERING COMPLETE ===`);
+  console.log(`${unmetCount} staff members have unmet targets (available for manual adjustment)`);
   console.log("=== ROSTER GENERATION COMPLETE ===");
 }
+  
 loadRosterFromFirebase() {
     firebase.database().ref("generatedRoster").on('value', (snapshot) => {
       if (snapshot.exists()) {
