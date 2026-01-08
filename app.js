@@ -406,12 +406,13 @@ if (exportRosterBtn) {
   }
 
   showIdealSchedule() {
-    document.getElementById('scheduleSection').style.display = 'none';
-    document.getElementById('autoRosterSection').style.display = 'none';
-    document.getElementById('idealScheduleSection').style.display = 'block';
-    this.renderIdealCalendar();
-    this.updateIdealMonthLabel();
-  }
+  document.getElementById('scheduleSection').style.display = 'none';
+  document.getElementById('autoRosterSection').style.display = 'none';
+  document.getElementById('idealScheduleSection').style.display = 'block';
+  this.renderIdealCalendar();
+  this.renderIdealSummary();
+  this.updateIdealMonthLabel();
+}
 
   changeMonth(direction) {
     let newMonth = this.currentDate.getMonth() + direction;
@@ -440,29 +441,28 @@ if (exportRosterBtn) {
   }
 
   changeIdealMonth(direction) {
-    let newMonth = this.idealDate.getMonth() + direction;
-    let newYear  = this.idealDate.getFullYear();
-    let newDate  = new Date(newYear, newMonth, 1);
-
-    if (newDate < this.dateRangeStart) {
-      newDate = new Date(
-        this.dateRangeStart.getFullYear(),
-        this.dateRangeStart.getMonth(),
-        1
-      );
-    }
-    if (newDate > this.dateRangeEnd) {
-      newDate = new Date(
-        this.dateRangeEnd.getFullYear(),
-        this.dateRangeEnd.getMonth(),
-        1
-      );
-    }
-
-    this.idealDate = newDate;
-    this.renderIdealCalendar();
-    this.updateIdealMonthLabel();
+  let newMonth = this.idealDate.getMonth() + direction;
+  let newYear = this.idealDate.getFullYear();
+  let newDate = new Date(newYear, newMonth, 1);
+  if (newDate < this.dateRangeStart) {
+    newDate = new Date(
+      this.dateRangeStart.getFullYear(),
+      this.dateRangeStart.getMonth(),
+      1
+    );
   }
+  if (newDate > this.dateRangeEnd) {
+    newDate = new Date(
+      this.dateRangeEnd.getFullYear(),
+      this.dateRangeEnd.getMonth(),
+      1
+    );
+  }
+  this.idealDate = newDate;
+  this.renderIdealCalendar();
+  this.renderIdealSummary();
+  this.updateIdealMonthLabel();
+}
 
   updateCurrentMonthLabel() {
     const monthName = this.monthNames[this.currentDate.getMonth()];
@@ -561,7 +561,7 @@ if (exportRosterBtn) {
   const calendarEl = document.getElementById('rosterCalendar');
   if (!calendarEl) return;
   calendarEl.innerHTML = '';
-
+  
   this.daysOfWeek.forEach(day => {
     const dayNameEl = document.createElement('div');
     dayNameEl.classList.add('day-name');
@@ -580,18 +580,19 @@ if (exportRosterBtn) {
     calendarEl.appendChild(blankCell);
   }
 
+  const rnNames = ["Graham Newton","Stuart Grant","Kris Austin","Kellie Ann Vogelaar","Janice Kirkham","Flo Butler","Jodi Scott","Carolyn Hogan","Michelle Sexsmith"];
+  const paraNames = ["Greg Barton","Scott McTaggart","Dave Allison","Mackenzie Wardle","Chad Hegge","Ken King","John Doyle","Bob Odney"];
+
   const getAvailableForShift = (dateStr, shiftType) => {
     const available = [];
-    const rnNames = new Set(["Graham Newton","Stuart Grant","Kris Austin","Kellie Ann Vogelaar","Janice Kirkham","Flo Butler","Jodi Scott","Carolyn Hogan","Michelle Sexsmith"]);
-    const paraNames = new Set(["Greg Barton","Scott McTaggart","Dave Allison","Mackenzie Wardle","Chad Hegge","Ken King","John Doyle","Bob Odney"]);
     const allStaff = new Set([...rnNames, ...paraNames]);
-
     allStaff.forEach(name => {
       const staffDays = this.allAvailability[name] || {};
       const entry = staffDays[dateStr];
       if (!entry) return;
       const value = entry[shiftType];
-      if (value && value !== 'V' && value !== 'U' && value !== '') {
+      // Available = A, S, or blank
+      if (value === "A" || value === "S" || value === "") {
         available.push(name);
       }
     });
@@ -605,9 +606,9 @@ if (exportRosterBtn) {
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
     const dateStr = d.toISOString().split('T')[0];
-
     const dayCell = document.createElement('div');
     dayCell.classList.add('day-cell');
+    
     if (d.getDay() === 0 || d.getDay() === 6) {
       dayCell.classList.add('weekend');
     }
@@ -628,13 +629,12 @@ if (exportRosterBtn) {
     }
 
     const entry = this.generatedRoster[dateStr];
-
     const shiftsContainer = document.createElement('div');
     shiftsContainer.style.display = 'flex';
     shiftsContainer.style.flexDirection = 'column';
     shiftsContainer.style.gap = '4px';
 
-    // ===== PARA DAY (ALL PARAS shown, AVAILABLE in green) =====
+    // ===== PARA DAY =====
     const pdSelect = document.createElement('select');
     pdSelect.style.width = '100%';
     pdSelect.style.padding = '4px';
@@ -643,30 +643,69 @@ if (exportRosterBtn) {
     pdSelect.style.backgroundColor = '#f5f5f5';
     pdSelect.style.border = '1px solid #999';
     pdSelect.style.borderRadius = '3px';
-    pdSelect.innerHTML = '<option value="">Para Day</option>';
+    pdSelect.innerHTML = '';
+
+    // Empty option
+    const pdEmptyOpt = document.createElement('option');
+    pdEmptyOpt.value = '';
+    pdEmptyOpt.textContent = '-- Select --';
+    pdEmptyOpt.style.backgroundColor = '#ffffff';
+    pdSelect.appendChild(pdEmptyOpt);
 
     const pdAvailable = getAvailableForShift(dateStr, 'Day');
     const pdAvailableSet = new Set(pdAvailable);
-    const paraNames = ["Greg Barton","Scott McTaggart","Dave Allison","Mackenzie Wardle","Chad Hegge","Ken King","John Doyle","Bob Odney"];
+
     paraNames.forEach(name => {
       const option = document.createElement('option');
       option.value = name;
-      option.textContent = name;
+      
+      const staffDays = this.allAvailability[name] || {};
+      const dayEntry = staffDays[dateStr];
+      const status = dayEntry?.Day || '';
+      
+      let displayText = name;
+      let bgColor = '#ffcccc';
+      let textColor = '#000';
+      
       if (pdAvailableSet.has(name)) {
-        option.style.backgroundColor = '#90EE90';
-        option.style.fontWeight = 'bold';
-        option.style.color = '#000';
-      } else {
-        option.style.backgroundColor = '#ffcccc';
-        option.style.color = '#666';
+        displayText = `${name} ✓`;
+        bgColor = '#90EE90';
+        textColor = '#000';
+      } else if (status === 'V') {
+        displayText = `${name} (Vacation)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
+      } else if (status === 'U') {
+        displayText = `${name} (Unavailable)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
+      } else if (status === 'T') {
+        displayText = `${name} (Training)`;
+        bgColor = '#ffeecc';
+        textColor = '#666';
+      } else if (status === 'K') {
+        displayText = `${name} (Sick)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
+      } else if (status === 'R') {
+        displayText = `${name} (Requested Off)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
       }
+      
+      option.textContent = displayText;
+      option.style.backgroundColor = bgColor;
+      option.style.color = textColor;
+      option.style.fontWeight = 'bold';
+      
       pdSelect.appendChild(option);
     });
+
     pdSelect.value = entry.paraDay || '';
     pdSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraDay', e.target.value));
     shiftsContainer.appendChild(pdSelect);
 
-    // ===== NURSE DAY (ALL RNs shown, AVAILABLE in green) =====
+    // ===== NURSE DAY =====
     const ndSelect = document.createElement('select');
     ndSelect.style.width = '100%';
     ndSelect.style.padding = '4px';
@@ -675,25 +714,63 @@ if (exportRosterBtn) {
     ndSelect.style.backgroundColor = '#f5f5f5';
     ndSelect.style.border = '1px solid #999';
     ndSelect.style.borderRadius = '3px';
-    ndSelect.innerHTML = '<option value="">Nurse Day</option>';
+    ndSelect.innerHTML = '';
+
+    const ndEmptyOpt = document.createElement('option');
+    ndEmptyOpt.value = '';
+    ndEmptyOpt.textContent = '-- Select --';
+    ndEmptyOpt.style.backgroundColor = '#ffffff';
+    ndSelect.appendChild(ndEmptyOpt);
 
     const ndAvailable = getAvailableForShift(dateStr, 'Day');
     const ndAvailableSet = new Set(ndAvailable);
-    const rnNames = ["Graham Newton","Stuart Grant","Kris Austin","Kellie Ann Vogelaar","Janice Kirkham","Flo Butler","Jodi Scott","Carolyn Hogan","Michelle Sexsmith"];
+
     rnNames.forEach(name => {
       const option = document.createElement('option');
       option.value = name;
-      option.textContent = name;
+      
+      const staffDays = this.allAvailability[name] || {};
+      const dayEntry = staffDays[dateStr];
+      const status = dayEntry?.Day || '';
+      
+      let displayText = name;
+      let bgColor = '#ffcccc';
+      let textColor = '#000';
+      
       if (ndAvailableSet.has(name)) {
-        option.style.backgroundColor = '#90EE90';
-        option.style.fontWeight = 'bold';
-        option.style.color = '#000';
-      } else {
-        option.style.backgroundColor = '#ffcccc';
-        option.style.color = '#666';
+        displayText = `${name} ✓`;
+        bgColor = '#90EE90';
+        textColor = '#000';
+      } else if (status === 'V') {
+        displayText = `${name} (Vacation)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
+      } else if (status === 'U') {
+        displayText = `${name} (Unavailable)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
+      } else if (status === 'T') {
+        displayText = `${name} (Training)`;
+        bgColor = '#ffeecc';
+        textColor = '#666';
+      } else if (status === 'K') {
+        displayText = `${name} (Sick)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
+      } else if (status === 'R') {
+        displayText = `${name} (Requested Off)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
       }
+      
+      option.textContent = displayText;
+      option.style.backgroundColor = bgColor;
+      option.style.color = textColor;
+      option.style.fontWeight = 'bold';
+      
       ndSelect.appendChild(option);
     });
+
     ndSelect.value = entry.nurseDay || '';
     ndSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseDay', e.target.value));
     shiftsContainer.appendChild(ndSelect);
@@ -707,24 +784,63 @@ if (exportRosterBtn) {
     pnSelect.style.backgroundColor = '#f5f5f5';
     pnSelect.style.border = '1px solid #999';
     pnSelect.style.borderRadius = '3px';
-    pnSelect.innerHTML = '<option value="">Para Night</option>';
+    pnSelect.innerHTML = '';
+
+    const pnEmptyOpt = document.createElement('option');
+    pnEmptyOpt.value = '';
+    pnEmptyOpt.textContent = '-- Select --';
+    pnEmptyOpt.style.backgroundColor = '#ffffff';
+    pnSelect.appendChild(pnEmptyOpt);
 
     const pnAvailable = getAvailableForShift(dateStr, 'Night');
     const pnAvailableSet = new Set(pnAvailable);
+
     paraNames.forEach(name => {
       const option = document.createElement('option');
       option.value = name;
-      option.textContent = name;
+      
+      const staffDays = this.allAvailability[name] || {};
+      const nightEntry = staffDays[dateStr];
+      const status = nightEntry?.Night || '';
+      
+      let displayText = name;
+      let bgColor = '#ffcccc';
+      let textColor = '#000';
+      
       if (pnAvailableSet.has(name)) {
-        option.style.backgroundColor = '#90EE90';
-        option.style.fontWeight = 'bold';
-        option.style.color = '#000';
-      } else {
-        option.style.backgroundColor = '#ffcccc';
-        option.style.color = '#666';
+        displayText = `${name} ✓`;
+        bgColor = '#90EE90';
+        textColor = '#000';
+      } else if (status === 'V') {
+        displayText = `${name} (Vacation)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
+      } else if (status === 'U') {
+        displayText = `${name} (Unavailable)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
+      } else if (status === 'T') {
+        displayText = `${name} (Training)`;
+        bgColor = '#ffeecc';
+        textColor = '#666';
+      } else if (status === 'K') {
+        displayText = `${name} (Sick)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
+      } else if (status === 'R') {
+        displayText = `${name} (Requested Off)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
       }
+      
+      option.textContent = displayText;
+      option.style.backgroundColor = bgColor;
+      option.style.color = textColor;
+      option.style.fontWeight = 'bold';
+      
       pnSelect.appendChild(option);
     });
+
     pnSelect.value = entry.paraNight || '';
     pnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraNight', e.target.value));
     shiftsContainer.appendChild(pnSelect);
@@ -738,47 +854,77 @@ if (exportRosterBtn) {
     nnSelect.style.backgroundColor = '#f5f5f5';
     nnSelect.style.border = '1px solid #999';
     nnSelect.style.borderRadius = '3px';
-    nnSelect.innerHTML = '<option value="">Nurse Night</option>';
+    nnSelect.innerHTML = '';
+
+    const nnEmptyOpt = document.createElement('option');
+    nnEmptyOpt.value = '';
+    nnEmptyOpt.textContent = '-- Select --';
+    nnEmptyOpt.style.backgroundColor = '#ffffff';
+    nnSelect.appendChild(nnEmptyOpt);
 
     const nnAvailable = getAvailableForShift(dateStr, 'Night');
     const nnAvailableSet = new Set(nnAvailable);
+
     rnNames.forEach(name => {
       const option = document.createElement('option');
       option.value = name;
-      option.textContent = name;
+      
+      const staffDays = this.allAvailability[name] || {};
+      const nightEntry = staffDays[dateStr];
+      const status = nightEntry?.Night || '';
+      
+      let displayText = name;
+      let bgColor = '#ffcccc';
+      let textColor = '#000';
+      
       if (nnAvailableSet.has(name)) {
-        option.style.backgroundColor = '#90EE90';
-        option.style.fontWeight = 'bold';
-        option.style.color = '#000';
-      } else {
-        option.style.backgroundColor = '#ffcccc';
-        option.style.color = '#666';
+        displayText = `${name} ✓`;
+        bgColor = '#90EE90';
+        textColor = '#000';
+      } else if (status === 'V') {
+        displayText = `${name} (Vacation)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
+      } else if (status === 'U') {
+        displayText = `${name} (Unavailable)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
+      } else if (status === 'T') {
+        displayText = `${name} (Training)`;
+        bgColor = '#ffeecc';
+        textColor = '#666';
+      } else if (status === 'K') {
+        displayText = `${name} (Sick)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
+      } else if (status === 'R') {
+        displayText = `${name} (Requested Off)`;
+        bgColor = '#ffcccc';
+        textColor = '#666';
       }
+      
+      option.textContent = displayText;
+      option.style.backgroundColor = bgColor;
+      option.style.color = textColor;
+      option.style.fontWeight = 'bold';
+      
       nnSelect.appendChild(option);
     });
+
     nnSelect.value = entry.nurseNight || '';
     nnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseNight', e.target.value));
     shiftsContainer.appendChild(nnSelect);
 
-    // Add shifts to day
     dayCell.appendChild(shiftsContainer);
 
-    // ===== CHECK FOR UNFILLED SHIFTS & CONFLICTS =====
+    // Check for empty shifts
     const emptyShifts = [];
     if (!entry.paraDay) emptyShifts.push('Para Day');
     if (!entry.nurseDay) emptyShifts.push('Nurse Day');
     if (!entry.paraNight) emptyShifts.push('Para Night');
     if (!entry.nurseNight) emptyShifts.push('Nurse Night');
 
-    // Check for conflicts (same person assigned to multiple shifts)
-    const assignedStaff = [entry.paraDay, entry.nurseDay, entry.paraNight, entry.nurseNight].filter(Boolean);
-    const staffCounts = {};
-    assignedStaff.forEach(name => {
-      staffCounts[name] = (staffCounts[name] || 0) + 1;
-    });
-    const hasConflicts = Object.values(staffCounts).some(count => count > 1);
-
-    if (hasConflicts || emptyShifts.length > 0) {
+    if (emptyShifts.length > 0) {
       dayCell.style.backgroundColor = '#ffcccc';
       dayCell.style.borderColor = '#ff0000';
       dayCell.style.borderWidth = '2px';
@@ -787,11 +933,7 @@ if (exportRosterBtn) {
       warningLabel.style.color = '#ff0000';
       warningLabel.style.fontWeight = 'bold';
       warningLabel.style.marginTop = '4px';
-      if (hasConflicts) {
-        warningLabel.textContent = '⚠️ CONFLICT';
-      } else {
-        warningLabel.textContent = '⚠️ ' + emptyShifts[0];
-      }
+      warningLabel.textContent = '⚠️ ' + emptyShifts[0];
       dayCell.appendChild(warningLabel);
     }
 
@@ -886,16 +1028,13 @@ renderRosterSummary() {
 }
   // Update roster cell and save
   updateRosterCell(dateStr, shift, name) {
-  const year = this.rosterDate.getFullYear();
-  const month = this.rosterDate.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  if (!dateStr || !shift) return;
 
-  // Initialize if needed
   if (!this.generatedRoster[dateStr]) {
-    this.generatedRoster[dateStr] = { 
-      paraDay: null, 
-      nurseDay: null, 
-      paraNight: null, 
+    this.generatedRoster[dateStr] = {
+      paraDay: null,
+      nurseDay: null,
+      paraNight: null,
       nurseNight: null,
       conflicts: false
     };
@@ -903,52 +1042,40 @@ renderRosterSummary() {
 
   const entry = this.generatedRoster[dateStr];
   
-  // Count CURRENT shifts for this person (BEFORE any changes)
-  let currentCount = 0;
-  for (let day = 1; day <= daysInMonth; day++) {
-    const d = new Date(year, month, day);
-    const dateStrDay = d.toISOString().split('T')[0];
-    const roster = this.generatedRoster[dateStrDay];
-    if (!roster) continue;
+  // Validate no day+night on same date
+  if (name) {
+    const isAssigningDay = shift === 'paraDay' || shift === 'nurseDay';
+    const isAssigningNight = shift === 'paraNight' || shift === 'nurseNight';
     
-    // Count if this person is assigned to any shift on this day
-    if (roster.paraDay === name || roster.nurseDay === name || 
-        roster.paraNight === name || roster.nurseNight === name) {
-      currentCount++;
+    if (isAssigningDay) {
+      // Check if person already assigned to night
+      if (entry.paraNight === name || entry.nurseNight === name) {
+        alert(`${name} is already assigned night shift. Cannot assign day+night same date.`);
+        this.renderRosterCalendar();
+        return;
+      }
+    }
+    if (isAssigningNight) {
+      // Check if person already assigned to day
+      if (entry.paraDay === name || entry.nurseDay === name) {
+        alert(`${name} is already assigned day shift. Cannot assign day+night same date.`);
+        this.renderRosterCalendar();
+        return;
+      }
     }
   }
 
-  // Get the cap for this month
-  const minimumTable = daysInMonth === 31 ? this.minimumRequired31 : this.minimumRequired30;
-  const staffCap = minimumTable[name] || 0;
-
-  // If trying to ASSIGN (not clear), and already at cap, BLOCK
-  if (name && currentCount >= staffCap) {
-    alert(`${name} has reached their shift limit (${staffCap} shifts max this month). Cannot assign more shifts.`);
-    // Reset the dropdown to its previous value
-    this.renderRosterCalendar();
-    return; // Block the assignment
-  }
-
-  // OK to proceed - assign the shift locally
-  this.generatedRoster[dateStr][shift] = name || null;
-
-  // CRITICAL: Use .update() instead of .set() to avoid Firebase listener conflicts
-  // This updates ONLY this date entry, not the entire roster
-  const updatePayload = {};
-  updatePayload[dateStr] = this.generatedRoster[dateStr];
+  // Manual override - allow any assignment (no cap enforcement for manual changes)
+  entry[shift] = name || null;
   
-  firebase.database().ref('generatedRoster').update(updatePayload)
-    .catch(error => {
-      console.error('Error updating roster:', error);
-      // Revert on Firebase error
-      this.generatedRoster[dateStr][shift] = null;
-      alert('Error saving to database. Assignment cancelled.');
-    });
-
-  // Re-render calendar to show updated dropdowns
+  // Save to Firebase
+  this.generatedRoster[dateStr] = entry;
+  firebase.database().ref("generatedRoster").set(this.generatedRoster);
+  
+  // Re-render
   this.renderRosterCalendar();
   this.renderRosterSummary();
+  console.log(`${name || 'Cleared'} assigned to ${shift} on ${dateStr}`);
 }
 
   renderCalendar() {
@@ -1069,6 +1196,38 @@ renderRosterSummary() {
 
   return counts;
 }
+
+  renderIdealSummary() {
+  const summaryEl = document.getElementById('idealSummary');
+  if (!summaryEl) return;
+  
+  const counts = this.getIdealTotalsForCurrentMonth();
+  const idealUsers = ["Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant"];
+  
+  let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
+  html += '<thead><tr style="background: #333; color: white;">';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Staff</th>';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Ideal Day</th>';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Ideal Night</th>';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Vacation</th>';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Total Days</th>';
+  html += '</tr></thead>';
+  html += '<tbody>';
+  
+  idealUsers.forEach(name => {
+    const c = counts[name] || { idealDay: 0, idealNight: 0, vacation: 0, total: 0 };
+    html += '<tr style="background: #f9f9f9;">';
+    html += `<td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">${name}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${c.idealDay}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${c.idealNight}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; color: #ff6666;">${c.vacation}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold; background: #ffffcc;">${c.total}</td>`;
+    html += '</tr>';
+  });
+  
+  html += '</tbody></table>';
+  summaryEl.innerHTML = html;
+}
   
   renderIdealCalendar() {
     const calendarEl = document.getElementById('idealCalendar');
@@ -1159,6 +1318,7 @@ renderRosterSummary() {
       summaryEl.innerHTML = html;
     }
   }
+
   
 
   createAvailabilityDropdown(dateStr, shiftType) {
