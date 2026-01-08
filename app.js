@@ -162,10 +162,20 @@ class StaffScheduleApp {
       console.error("Error listening to Firebase locks", error);
     });
 
-    // Load generated roster persistence
-    firebase.database().ref("generatedRoster").on("value", snapshot => {
-      this.generatedRoster = snapshot.val() || {};
-    });
+    // Load roster ONCE on startup (no continuous listening)
+firebase.database().ref("generatedRoster").once("value", snapshot => {
+  this.generatedRoster = snapshot.val() || {};
+});
+
+// Add read-only listener for non-Greg privileged users
+firebase.database().ref("generatedRoster").on("value", snapshot => {
+  if (this.currentStaff && this.currentStaff !== "Greg Barton" && this.privilegedUsers.has(this.currentStaff)) {
+    this.generatedRoster = snapshot.val() || {};
+    if (document.getElementById('autoRosterSection').style.display === 'block') {
+      this.renderRosterCalendar();
+    }
+  }
+});
   }
 
   bindEvents() {
@@ -222,6 +232,18 @@ class StaffScheduleApp {
       rosterPrev.addEventListener('click', () => this.changeRosterMonth(-1));
       rosterNext.addEventListener('click', () => this.changeRosterMonth(1));
     }
+
+    // Export roster to CSV button
+const exportRosterBtn = document.getElementById('exportRosterBtn');
+if (exportRosterBtn) {
+  exportRosterBtn.addEventListener('click', () => {
+    if (this.currentStaff !== "Greg Barton") {
+      alert("Only Greg can export the roster.");
+      return;
+    }
+    this.exportRosterToCSV();
+  });
+}
 
     // NEW: schedule lock buttons (Greg only)
     const lockFirstSixBtn = document.getElementById('lockFirstSixBtn');
