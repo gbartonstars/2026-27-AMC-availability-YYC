@@ -1614,7 +1614,7 @@ renderRosterSummary() {
   this.generatedRoster = {};
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = d.toISOString().split("T")[0];
     this.generatedRoster[dateStr] = {
       paraDay: null,
       nurseDay: null,
@@ -1624,174 +1624,120 @@ renderRosterSummary() {
     };
   }
 
-  console.log(`\n=== ROSTER GENERATION START ===`);
+  console.log("=== ROSTER GENERATION START ===");
   console.log(`Month: ${this.monthNames[month]} ${year}`);
   console.log(`Days in month: ${daysInMonth}`);
-  
-  const rnNames = new Set([
-    "Graham Newton", "Stuart Grant", "Kris Austin",
-    "Kellie Ann Vogelaar", "Janice Kirkham",
-    "Flo Butler", "Jodi Scott", "Carolyn Hogan", "Michelle Sexsmith"
-  ]);
 
-  const paraNames = new Set([
-    "Greg Barton", "Scott McTaggart", "Dave Allison",
-    "Mackenzie Wardle", "Chad Hegge", "Ken King",
-    "John Doyle", "Bob Odney"
-  ]);
+  const rnNames = new Set(["Graham Newton", "Stuart Grant", "Kris Austin", "Kellie Ann Vogelaar", "Janice Kirkham", "Flo Butler", "Jodi Scott", "Carolyn Hogan", "Michelle Sexsmith"]);
+  const paraNames = new Set(["Greg Barton", "Scott McTaggart", "Dave Allison", "Mackenzie Wardle", "Chad Hegge", "Ken King", "John Doyle", "Bob Odney"]);
 
-  const vacationAdjustableStaff = new Set([
-    "Greg Barton", "Scott McTaggart", "Mackenzie Wardle", "Ken King",
-    "Graham Newton", "Stuart Grant", "Kris Austin", "Janice Kirkham",
-    "Flo Butler", "Jodi Scott", "Carolyn Hogan", "Michelle Sexsmith", "John Doyle"
-  ]);
+  // Track which staff members are placed into ideal shifts
+  const idealPlaced = {};
+  ["Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant"].forEach(name => {
+    idealPlaced[name] = new Set();
+  });
 
+  // ===== STEP 1: Place ideal shifts first =====
+  console.log("=== STEP 1: Placing ideal shifts ===");
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
-    const dateStr = d.toISOString().split('T')[0];
-    this.generatedRoster[dateStr] = {
-      paraDay: null,
-      nurseDay: null,
-      paraNight: null,
-      nurseNight: null,
-      conflicts: false
-    };
-  }
+    const dateStr = d.toISOString().split("T")[0];
+    const roster = this.generatedRoster[dateStr];
 
-  console.log("\n=== ROSTER GENERATION START ===");
-  console.log("Month:", new Date(year, month, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' }));
+    const idealUsers = ["Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant"];
+    idealUsers.forEach(name => {
+      const idealEntry = this.idealAvailability[name]?.[dateStr];
+      if (!idealEntry) return;
 
-  const requirementsTable = daysInMonth === 30 ? this.minimumRequired30 : this.minimumRequired31;
-  const adjustedRequirements = {};
-  
-  console.log("\nSTEP 0: Calculating adjusted requirements...");
-  for (const name of [...rnNames, ...paraNames]) {
-    let baseRequired = requirementsTable[name] || 0;
-    let vacationDays = 0;
-
-    if (vacationAdjustableStaff.has(name) && this.allAvailability[name]) {
-      const staffDays = this.allAvailability[name];
-      for (let day = 1; day <= daysInMonth; day++) {
-        const d = new Date(year, month, day);
-        const dateStr = d.toISOString().split('T')[0];
-        const entry = staffDays[dateStr];
-        if (entry) {
-          if (entry.Day === 'V') vacationDays++;
-          if (entry.Night === 'V') vacationDays++;
+      // Ideal Day
+      if (idealEntry.Day === "D") {
+        if (paraNames.has(name) && !roster.paraDay) {
+          roster.paraDay = name;
+          idealPlaced[name].add(dateStr);
+        } else if (rnNames.has(name) && !roster.nurseDay) {
+          roster.nurseDay = name;
+          idealPlaced[name].add(dateStr);
         }
       }
+
+      // Ideal Night
+      if (idealEntry.Night === "N") {
+        if (paraNames.has(name) && !roster.paraNight) {
+          roster.paraNight = name;
+          idealPlaced[name].add(dateStr);
+        } else if (rnNames.has(name) && !roster.nurseNight) {
+          roster.nurseNight = name;
+          idealPlaced[name].add(dateStr);
+        }
+      }
+    });
+  }
+
+  // ===== STEP 2: Calculate adjusted requirements =====
+  console.log("=== STEP 2: Calculating adjusted requirements ===");
+  const minimumTable = daysInMonth === 31 ? this.minimumRequired31 : this.minimumRequired30;
+  const adjustedRequirements = {};
+  const allStaff = Array.from(new Set([...rnNames, ...paraNames]));
+
+  allStaff.forEach(name => {
+    const baseCap = minimumTable[name] || 0;
+    
+    // Count vacation days for this month (ONLY Day vacation, not Night)
+    let vacationDays = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      const dateStr = d.toISOString().split("T")[0];
+      const entry = this.allAvailability[name]?.[dateStr];
+      if (entry?.Day === "V") vacationDays++;
     }
 
-    const adjustedRequired = Math.max(0, baseRequired - vacationDays);
+    // Count ideal placements
+    const idealCount = idealPlaced[name]?.size || 0;
+
+    const adjusted = Math.max(0, baseCap - vacationDays - idealCount);
     adjustedRequirements[name] = {
-      base: baseRequired,
-      vacationDays: vacationDays,
-      adjusted: adjustedRequired,
+      base: baseCap,
+      vacation: vacationDays,
+      ideal: idealCount,
+      target: adjusted,
       assigned: 0
     };
-  }
 
-  console.log(`Requirements loaded for ${Object.keys(adjustedRequirements).length} staff members`);
-  console.log(`allAvailability has data for: ${Object.keys(this.allAvailability).join(', ')}`);
+    console.log(`${name}: base=${baseCap}, vacation=${vacationDays}, ideal=${idealCount}, target=${adjusted}`);
+  });
+
+  // ===== STEP 3: Fill remaining shifts =====
+  console.log("=== STEP 3: Filling remaining shifts ===");
+  let filledCount = 0;
 
   const getStaffAvailableForShift = (dateStr, shiftType) => {
-  const available = [];
-  
-  Object.keys(this.allAvailability).forEach(name => {
-    const staffDays = this.allAvailability[name] || {};
-    const entry = staffDays[dateStr];
-    
-    if (!entry) return;
-    
-    const dayValue = entry['Day'];
-    const nightValue = entry['Night'];
-    
-    // TRAINING BLOCKER: If marked Training on EITHER shift, skip completely
-    if (dayValue === 'T' || nightValue === 'T') {
-      console.log(`  ${name} on ${dateStr}: TRAINING - BLOCKED`);
-      return; // Skip this person entirely
-    }
-    
-    const value = entry[shiftType];
-    
-    console.log(`  ${name} on ${dateStr} ${shiftType}: ${value}`);
-    
-    if (value && value !== 'V' && value !== 'U' && value !== '') {
-      available.push(name);
-    }
-  });
-  
-  return available;
-};
-
-const isDoubleShifted = (name, dateStr, currentShift) => {
-  const roster = this.generatedRoster[dateStr];
-  if (!roster) return false;
-  if (currentShift === 'paraDay' && roster.paraNight === name) return true;
-  if (currentShift === 'paraNight' && roster.paraDay === name) return true;
-  if (currentShift === 'nurseDay' && roster.nurseNight === name) return true;
-  if (currentShift === 'nurseNight' && roster.nurseDay === name) return true;
-  return false;
-};
-
-  console.log("\nSTEP 1: Placing ideal staff (Greg, Scott, Graham, Stuart)...");
-const idealPlaced = {};
-
-this.idealUsers.forEach(name => {
-  idealPlaced[name] = new Set();
-  const staffIdeal = this.idealAvailability[name] || {};
-  const isRN = rnNames.has(name);
-  
-  let placed = 0;
-  Object.keys(staffIdeal).forEach(dateStr => {
-    const d = new Date(dateStr + 'T00:00:00Z');
-    if (d.getMonth() !== month || d.getFullYear() !== year) return;
-    
-    // ENSURE the roster entry exists
-    if (!this.generatedRoster[dateStr]) {
-      this.generatedRoster[dateStr] = {
-        paraDay: null,
-        nurseDay: null,
-        paraNight: null,
-        nurseNight: null,
-        conflicts: false
-      };
-    }
-    
-    const entry = staffIdeal[dateStr] || {};
-    
-    // Place Day shifts from ideal (no availability checking needed)
-    if (entry.Day === 'D') {
-      const shiftKey = isRN ? 'nurseDay' : 'paraDay';
-      if (!this.generatedRoster[dateStr][shiftKey] && !isDoubleShifted(name, dateStr, shiftKey)) {
-        this.generatedRoster[dateStr][shiftKey] = name;
-        idealPlaced[name].add(dateStr);
-        placed++;
+    const available = [];
+    allStaff.forEach(name => {
+      const staffDays = this.allAvailability[name] || {};
+      const entry = staffDays[dateStr];
+      if (!entry) return;
+      const value = entry[shiftType];
+      if (value && value !== "V" && value !== "U" && value !== "") {
+        available.push(name);
       }
-    }
-    
-    // Place Night shifts from ideal (no availability checking needed)
-    if (entry.Night === 'N') {
-      const shiftKey = isRN ? 'nurseNight' : 'paraNight';
-      if (!this.generatedRoster[dateStr][shiftKey] && !isDoubleShifted(name, dateStr, shiftKey)) {
-        this.generatedRoster[dateStr][shiftKey] = name;
-        idealPlaced[name].add(dateStr);
-        placed++;
-      }
-    }
-  });
-  
-  console.log(`  ${name}: placed ${placed} shifts`);
-});
+    });
+    return available.sort();
+  };
 
-  console.log("\nSTEP 2: Filling remaining shifts...");
-  let filledCount = 0;
-  
+  const isDoubleShifted = (name, dateStr, shiftType) => {
+    const roster = this.generatedRoster[dateStr];
+    if (shiftType === "paraDay" || shiftType === "paraNight") {
+      return roster.paraDay === name && roster.paraNight === name;
+    } else if (shiftType === "nurseDay" || shiftType === "nurseNight") {
+      return roster.nurseDay === name && roster.nurseNight === name;
+    }
+    return false;
+  };
+
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
-    const dateStr = d.toISOString().split('T')[0];
-    
-    // ENSURE the roster entry exists before accessing it
+    const dateStr = d.toISOString().split("T")[0];
+
     if (!this.generatedRoster[dateStr]) {
       this.generatedRoster[dateStr] = {
         paraDay: null,
@@ -1801,147 +1747,96 @@ this.idealUsers.forEach(name => {
         conflicts: false
       };
     }
-    
+
     const roster = this.generatedRoster[dateStr];
 
+    // ===== PARA DAY =====
     if (!roster.paraDay) {
-      const available = getStaffAvailableForShift(dateStr, 'Day')
+      const available = getStaffAvailableForShift(dateStr, "Day")
         .filter(name => paraNames.has(name))
         .filter(name => !idealPlaced[name] || !idealPlaced[name].has(dateStr))
-        .filter(name => !isDoubleShifted(name, dateStr, 'paraDay'))
+        .filter(name => !isDoubleShifted(name, dateStr, "paraDay"))
         .sort((a, b) => adjustedRequirements[a].assigned - adjustedRequirements[b].assigned);
-      
+
       if (available.length > 0) {
         roster.paraDay = available[0];
-        adjustedRequirements[available[0]].assigned++;
+        adjustedRequirements[available[0]].assigned += 1;
         filledCount++;
       } else {
         roster.conflicts = true;
       }
     }
 
+    // ===== NURSE DAY =====
     if (!roster.nurseDay) {
-      const available = getStaffAvailableForShift(dateStr, 'Day')
+      const available = getStaffAvailableForShift(dateStr, "Day")
         .filter(name => rnNames.has(name))
         .filter(name => !idealPlaced[name] || !idealPlaced[name].has(dateStr))
-        .filter(name => !isDoubleShifted(name, dateStr, 'nurseDay'))
+        .filter(name => !isDoubleShifted(name, dateStr, "nurseDay"))
         .sort((a, b) => adjustedRequirements[a].assigned - adjustedRequirements[b].assigned);
-      
+
       if (available.length > 0) {
         roster.nurseDay = available[0];
-        adjustedRequirements[available[0]].assigned++;
+        adjustedRequirements[available[0]].assigned += 1;
         filledCount++;
       } else {
         roster.conflicts = true;
       }
     }
 
+    // ===== PARA NIGHT =====
     if (!roster.paraNight) {
-      const available = getStaffAvailableForShift(dateStr, 'Night')
+      const available = getStaffAvailableForShift(dateStr, "Night")
         .filter(name => paraNames.has(name))
         .filter(name => !idealPlaced[name] || !idealPlaced[name].has(dateStr))
-        .filter(name => !isDoubleShifted(name, dateStr, 'paraNight'))
+        .filter(name => !isDoubleShifted(name, dateStr, "paraNight"))
         .sort((a, b) => adjustedRequirements[a].assigned - adjustedRequirements[b].assigned);
-      
+
       if (available.length > 0) {
         roster.paraNight = available[0];
-        adjustedRequirements[available[0]].assigned++;
+        adjustedRequirements[available[0]].assigned += 1;
         filledCount++;
       } else {
         roster.conflicts = true;
       }
     }
 
+    // ===== NURSE NIGHT =====
     if (!roster.nurseNight) {
-      const available = getStaffAvailableForShift(dateStr, 'Night')
+      const available = getStaffAvailableForShift(dateStr, "Night")
         .filter(name => rnNames.has(name))
         .filter(name => !idealPlaced[name] || !idealPlaced[name].has(dateStr))
-        .filter(name => !isDoubleShifted(name, dateStr, 'nurseNight'))
+        .filter(name => !isDoubleShifted(name, dateStr, "nurseNight"))
         .sort((a, b) => adjustedRequirements[a].assigned - adjustedRequirements[b].assigned);
-      
+
       if (available.length > 0) {
         roster.nurseNight = available[0];
-        adjustedRequirements[available[0]].assigned++;
+        adjustedRequirements[available[0]].assigned += 1;
         filledCount++;
       } else {
         roster.conflicts = true;
       }
     }
   }
-  
-  console.log(`  Filled ${filledCount} additional shifts`);
 
-  console.log("\nSTEP 3: Summary...");
-  let completelyFilledDays = 0;
-  let conflictDays = 0;
+  console.log(`Filled ${filledCount} additional shifts`);
 
-  for (let day = 1; day <= daysInMonth; day++) {
-    const d = new Date(year, month, day);
-    const dateStr = d.toISOString().split('T')[0];
-    const roster = this.generatedRoster[dateStr];
-    
-    if (roster.conflicts) {
-      conflictDays++;
-    } else if (roster.paraDay && roster.nurseDay && roster.paraNight && roster.nurseNight) {
-      completelyFilledDays++;
-    }
-  }
+  // ===== FINAL SUMMARY =====
+  console.log("=== FINAL SUMMARY ===");
+  allStaff.forEach(name => {
+    const req = adjustedRequirements[name];
+    console.log(`${name}: target=${req.target}, assigned=${req.assigned}`);
+  });
 
-  console.log(`✓ Days fully staffed: ${completelyFilledDays}/${daysInMonth}`);
-  console.log(`⚠️ Days with conflicts: ${conflictDays}/${daysInMonth}`);
-
-  console.log("\n=== ROSTER GENERATION COMPLETE ===\n");
-
+  // Save to Firebase
   firebase.database().ref("generatedRoster").set(this.generatedRoster);
+
+  // Render the roster
   this.renderRosterCalendar();
+  this.renderRosterSummary();
 
-  alert(`Roster generated!\n✓ ${completelyFilledDays} days fully staffed\n⚠️ ${conflictDays} days with conflicts\n\nCheck console (F12) for details.`);
+  console.log("=== ROSTER GENERATION COMPLETE ===");
 }
-
-  assignShift(dateStr, shiftType, staffList, caps, shiftCounts) {
-    const eligible = [];
-
-    staffList.forEach(name => {
-      const availability = this.allAvailability[name] || {};
-      const entry = availability[dateStr];
-
-      if (!entry) return;
-
-      const dayValue = entry['Day'];
-      const nightValue = entry['Night'];
-
-      // TRAINING IS A HARD BLOCKER
-      if (dayValue === 'T' || nightValue === 'T') {
-        return;
-      }
-
-      let shiftValue = shiftType === 'Day' ? dayValue : nightValue;
-
-      if (!shiftValue || shiftValue === 'U' || shiftValue === 'V' || shiftValue === 'R' || shiftValue === 'K' || shiftValue === '') {
-        return;
-      }
-
-      const cap = caps[name];
-      if (!cap) return;
-
-      if (shiftCounts[name] >= cap.cap) {
-        return;
-      }
-
-      eligible.push({
-        name: name,
-        shiftCount: shiftCounts[name]
-      });
-    });
-
-    if (eligible.length === 0) {
-      return null;
-    }
-
-    eligible.sort((a, b) => a.shiftCount - b.shiftCount);
-
-    return eligible[0].name;
-  }
 loadRosterFromFirebase() {
     firebase.database().ref("generatedRoster").on('value', (snapshot) => {
       if (snapshot.exists()) {
