@@ -630,19 +630,23 @@ if (exportRosterBtn) {
 
     const entry = this.generatedRoster[dateStr];
     const shiftsContainer = document.createElement('div');
-    shiftsContainer.style.display = 'flex';
-    shiftsContainer.style.flexDirection = 'column';
-    shiftsContainer.style.gap = '4px';
+shiftsContainer.style.display = 'flex';
+shiftsContainer.style.flexDirection = 'column';
+shiftsContainer.style.gap = '2px';
+shiftsContainer.style.width = '100%';
+shiftsContainer.style.minHeight = '0';
 
     // ===== PARA DAY =====
 const pdSelect = document.createElement('select');
 pdSelect.style.width = '100%';
-pdSelect.style.padding = '4px';
-pdSelect.style.fontSize = '11px';
+pdSelect.style.padding = '2px';
+pdSelect.style.fontSize = '10px';
 pdSelect.style.fontWeight = 'bold';
 pdSelect.style.backgroundColor = '#f5f5f5';
 pdSelect.style.border = '1px solid #999';
-pdSelect.style.borderRadius = '3px';
+pdSelect.style.borderRadius = '2px';
+pdSelect.style.minWidth = '0';
+pdSelect.style.flex = '1';
 pdSelect.innerHTML = '';
 
 // Empty option
@@ -677,15 +681,17 @@ pdSelect.value = entry.paraDay || '';
 pdSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraDay', e.target.value));
 shiftsContainer.appendChild(pdSelect);
 
-    // ===== NURSE DAY =====
+// ===== NURSE DAY =====
 const ndSelect = document.createElement('select');
 ndSelect.style.width = '100%';
-ndSelect.style.padding = '4px';
-ndSelect.style.fontSize = '11px';
+ndSelect.style.padding = '2px';
+ndSelect.style.fontSize = '10px';
 ndSelect.style.fontWeight = 'bold';
 ndSelect.style.backgroundColor = '#f5f5f5';
 ndSelect.style.border = '1px solid #999';
-ndSelect.style.borderRadius = '3px';
+ndSelect.style.borderRadius = '2px';
+ndSelect.style.minWidth = '0';
+ndSelect.style.flex = '1';
 ndSelect.innerHTML = '';
 
 const ndEmptyOpt = document.createElement('option');
@@ -719,15 +725,17 @@ ndSelect.value = entry.nurseDay || '';
 ndSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseDay', e.target.value));
 shiftsContainer.appendChild(ndSelect);
 
-    // ===== PARA NIGHT =====
+// ===== PARA NIGHT =====
 const pnSelect = document.createElement('select');
 pnSelect.style.width = '100%';
-pnSelect.style.padding = '4px';
-pnSelect.style.fontSize = '11px';
+pnSelect.style.padding = '2px';
+pnSelect.style.fontSize = '10px';
 pnSelect.style.fontWeight = 'bold';
 pnSelect.style.backgroundColor = '#f5f5f5';
 pnSelect.style.border = '1px solid #999';
-pnSelect.style.borderRadius = '3px';
+pnSelect.style.borderRadius = '2px';
+pnSelect.style.minWidth = '0';
+pnSelect.style.flex = '1';
 pnSelect.innerHTML = '';
 
 const pnEmptyOpt = document.createElement('option');
@@ -761,15 +769,17 @@ pnSelect.value = entry.paraNight || '';
 pnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraNight', e.target.value));
 shiftsContainer.appendChild(pnSelect);
 
-    // ===== NURSE NIGHT =====
+// ===== NURSE NIGHT =====
 const nnSelect = document.createElement('select');
 nnSelect.style.width = '100%';
-nnSelect.style.padding = '4px';
-nnSelect.style.fontSize = '11px';
+nnSelect.style.padding = '2px';
+nnSelect.style.fontSize = '10px';
 nnSelect.style.fontWeight = 'bold';
 nnSelect.style.backgroundColor = '#f5f5f5';
 nnSelect.style.border = '1px solid #999';
-nnSelect.style.borderRadius = '3px';
+nnSelect.style.borderRadius = '2px';
+nnSelect.style.minWidth = '0';
+nnSelect.style.flex = '1';
 nnSelect.innerHTML = '';
 
 const nnEmptyOpt = document.createElement('option');
@@ -802,6 +812,9 @@ rnNames.forEach(name => {
 nnSelect.value = entry.nurseNight || '';
 nnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseNight', e.target.value));
 shiftsContainer.appendChild(nnSelect);
+
+// Add shifts container to day cell
+dayCell.appendChild(shiftsContainer);
 
     // Check for empty shifts
     const emptyShifts = [];
