@@ -1014,68 +1014,49 @@ renderRosterSummary() {
   if (!summaryEl) return;
   
   const counts = this.getRosterCountsForMonth();
-  let html = '<h3>Shift Summary</h3><table style="width:100%; border-collapse:collapse; font-size:12px;"><tr><th style="border:1px solid #ccc; padding:4px;">Staff</th><th style="border:1px solid #ccc; padding:4px;">Total</th><th style="border:1px solid #ccc; padding:4px;">Day</th><th style="border:1px solid #ccc; padding:4px;">Night</th><th style="border:1px solid #ccc; padding:4px;">Weekend</th></tr>';
+  const minimumTable = this.rosterDate.getMonth() + 1 === 31 || (this.rosterDate.getMonth() + 1) % 12 === 2 
+    ? this.minimumRequired31 
+    : this.minimumRequired30;
   
-  Object.keys(counts).sort().forEach(name => {
-    const c = counts[name];
-    if (c.total > 0) {
-      html += `<tr><td style="border:1px solid #ccc; padding:4px;">${name}</td><td style="border:1px solid #ccc; padding:4px; text-align:center;">${c.total}</td><td style="border:1px solid #ccc; padding:4px; text-align:center;">${c.day}</td><td style="border:1px solid #ccc; padding:4px; text-align:center;">${c.night}</td><td style="border:1px solid #ccc; padding:4px; text-align:center;">${c.weekend}</td></tr>`;
-    }
-  });
-  
-  html += '</table>';
-  summaryEl.innerHTML = html;
-}
-  // Update roster cell and save
-  updateRosterCell(dateStr, shift, name) {
-  if (!dateStr || !shift) return;
+  const allStaff = [
+    "Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant",
+    "Dave Allison", "Mackenzie Wardle", "Chad Hegge", "Ken King", "John Doyle", "Bob Odney",
+    "Kris Austin", "Kellie Ann Vogelaar", "Janice Kirkham", "Flo Butler", "Jodi Scott", "Carolyn Hogan", "Michelle Sexsmith"
+  ];
 
-  if (!this.generatedRoster[dateStr]) {
-    this.generatedRoster[dateStr] = {
-      paraDay: null,
-      nurseDay: null,
-      paraNight: null,
-      nurseNight: null,
-      conflicts: false
-    };
-  }
+  let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
+  html += '<thead><tr style="background: #333; color: white;">';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Staff</th>';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Target</th>';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Total</th>';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Day</th>';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Night</th>';
+  html += '<th style="padding: 8px; border: 1px solid #999;">Weekend</th>';
+  html += '</tr></thead>';
+  html += '<tbody>';
 
-  const entry = this.generatedRoster[dateStr];
-  
-  // Validate no day+night on same date
-  if (name) {
-    const isAssigningDay = shift === 'paraDay' || shift === 'nurseDay';
-    const isAssigningNight = shift === 'paraNight' || shift === 'nurseNight';
+  allStaff.forEach(name => {
+    const c = counts[name] || { total: 0, day: 0, night: 0, weekend: 0 };
+    const target = minimumTable[name] || 0;
+    const gap = Math.max(0, target - c.total);
     
-    if (isAssigningDay) {
-      // Check if person already assigned to night
-      if (entry.paraNight === name || entry.nurseNight === name) {
-        alert(`${name} is already assigned night shift. Cannot assign day+night same date.`);
-        this.renderRosterCalendar();
-        return;
-      }
-    }
-    if (isAssigningNight) {
-      // Check if person already assigned to day
-      if (entry.paraDay === name || entry.nurseDay === name) {
-        alert(`${name} is already assigned day shift. Cannot assign day+night same date.`);
-        this.renderRosterCalendar();
-        return;
-      }
-    }
-  }
+    // Highlight row in LIGHT RED if deficiency
+    const rowBg = gap > 0 ? '#ffe6e6' : '#f9f9f9';
+    const gapColor = gap > 0 ? '#ff0000' : '#000';
+    const gapText = gap > 0 ? ` (⚠️ ${gap} short)` : '';
 
-  // Manual override - allow any assignment (no cap enforcement for manual changes)
-  entry[shift] = name || null;
-  
-  // Save to Firebase
-  this.generatedRoster[dateStr] = entry;
-  firebase.database().ref("generatedRoster").set(this.generatedRoster);
-  
-  // Re-render
-  this.renderRosterCalendar();
-  this.renderRosterSummary();
-  console.log(`${name || 'Cleared'} assigned to ${shift} on ${dateStr}`);
+    html += `<tr style="background: ${rowBg};">`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">${name}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold;">${target}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; color: ${gapColor}; font-weight: bold;">${c.total}${gapText}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${c.day}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${c.night}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${c.weekend}</td>`;
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  summaryEl.innerHTML = html;
 }
 
   renderCalendar() {
@@ -1801,6 +1782,7 @@ renderRosterSummary() {
   const rnNames = new Set(["Graham Newton", "Stuart Grant", "Kris Austin", "Kellie Ann Vogelaar", "Janice Kirkham", "Flo Butler", "Jodi Scott", "Carolyn Hogan", "Michelle Sexsmith"]);
   const paraNames = new Set(["Greg Barton", "Scott McTaggart", "Dave Allison", "Mackenzie Wardle", "Chad Hegge", "Ken King", "John Doyle", "Bob Odney"]);
   const allStaff = Array.from(new Set([...rnNames, ...paraNames]));
+  const idealUsers = ["Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant"];
 
   // Initialize month roster
   const monthRoster = {};
@@ -1841,20 +1823,21 @@ renderRosterSummary() {
       vacation: vacationDays.size,
       target: adjusted,
       assigned: 0,
-      datesAssigned: new Set()
+      datesAssigned: new Set(),
+      isIdealUser: idealUsers.includes(name)
     };
 
     console.log(`${name}: base=${baseCap}, vacation=${vacationDays.size}, target=${adjusted}`);
   });
 
-  // ===== STEP 2: Helper functions =====
+  // ===== STEP 2: Helper Functions =====
   const getStaffAvailableForShift = (dateStr, shiftType) => {
     const available = [];
     allStaff.forEach(name => {
       const entry = this.allAvailability[name]?.[dateStr];
       if (!entry) return;
       const value = entry[shiftType];
-      // Available = A (available), S (scheduled), or nothing (empty)
+      // Available = A (available), S (scheduled), or blank (empty)
       // NOT available = V (vacation), U (unavailable), T (training), K (sick), R (requested off)
       if (value === "A" || value === "S" || value === "") {
         available.push(name);
@@ -1863,18 +1846,59 @@ renderRosterSummary() {
     return available;
   };
 
-  // KEY: Prevent same person on day AND night same date
   const alreadyScheduledOnThisDate = (name, dateStr) => {
     return staffStats[name].datesAssigned.has(dateStr);
   };
 
-  // KEY: Check if person has reached their target
   const hasMetTarget = (name) => {
     return staffStats[name].assigned >= staffStats[name].target;
   };
 
-  // ===== STEP 3: Fill shifts in order (Para Day, Nurse Day, Para Night, Nurse Night) =====
-  console.log("=== STEP 2: Filling shifts ===");
+  // ===== STEP 3: PLACE IDEAL SCHEDULE FIRST =====
+  console.log("=== STEP 3: Place Ideal Schedule FIRST ===");
+  let idealPlaced = 0;
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const dateStr = d.toISOString().split("T")[0];
+    const roster = monthRoster[dateStr];
+
+    idealUsers.forEach(name => {
+      const idealEntry = this.idealAvailability[name]?.[dateStr];
+      if (!idealEntry) return;
+
+      const isRN = rnNames.has(name);
+
+      // Place Ideal Day (D)
+      if (idealEntry.Day === "D") {
+        const shiftKey = isRN ? "nurseDay" : "paraDay";
+        if (!roster[shiftKey]) {
+          roster[shiftKey] = name;
+          staffStats[name].assigned += 1;
+          staffStats[name].datesAssigned.add(dateStr);
+          idealPlaced++;
+          console.log(`  ✓ ${name} placed on Ideal Day ${dateStr}`);
+        }
+      }
+
+      // Place Ideal Night (N) - only if NOT already on day shift same date
+      if (idealEntry.Night === "N") {
+        const shiftKey = isRN ? "nurseNight" : "paraNight";
+        if (!roster[shiftKey] && !staffStats[name].datesAssigned.has(dateStr)) {
+          roster[shiftKey] = name;
+          staffStats[name].assigned += 1;
+          staffStats[name].datesAssigned.add(dateStr);
+          idealPlaced++;
+          console.log(`  ✓ ${name} placed on Ideal Night ${dateStr}`);
+        }
+      }
+    });
+  }
+
+  console.log(`Placed ${idealPlaced} ideal shifts`);
+
+  // ===== STEP 4: Fill remaining shifts =====
+  console.log("=== STEP 4: Fill remaining shifts ===");
   let filledCount = 0;
 
   for (let day = 1; day <= daysInMonth; day++) {
@@ -1886,17 +1910,15 @@ renderRosterSummary() {
     if (!roster.paraDay) {
       let available = getStaffAvailableForShift(dateStr, "Day")
         .filter(name => paraNames.has(name))
-        .filter(name => !alreadyScheduledOnThisDate(name, dateStr))  // NOT already on this date
-        .filter(name => !hasMetTarget(name))  // NOT reached target
-        .sort((a, b) => staffStats[a].assigned - staffStats[b].assigned);  // Least scheduled first
+        .filter(name => !alreadyScheduledOnThisDate(name, dateStr))
+        .filter(name => !hasMetTarget(name))
+        .sort((a, b) => staffStats[a].assigned - staffStats[b].assigned);
 
       if (available.length > 0) {
         roster.paraDay = available[0];
         staffStats[available[0]].assigned += 1;
         staffStats[available[0]].datesAssigned.add(dateStr);
         filledCount++;
-      } else {
-        roster.conflicts = true;
       }
     }
 
@@ -1913,8 +1935,6 @@ renderRosterSummary() {
         staffStats[available[0]].assigned += 1;
         staffStats[available[0]].datesAssigned.add(dateStr);
         filledCount++;
-      } else {
-        roster.conflicts = true;
       }
     }
 
@@ -1931,8 +1951,6 @@ renderRosterSummary() {
         staffStats[available[0]].assigned += 1;
         staffStats[available[0]].datesAssigned.add(dateStr);
         filledCount++;
-      } else {
-        roster.conflicts = true;
       }
     }
 
@@ -1949,15 +1967,13 @@ renderRosterSummary() {
         staffStats[available[0]].assigned += 1;
         staffStats[available[0]].datesAssigned.add(dateStr);
         filledCount++;
-      } else {
-        roster.conflicts = true;
       }
     }
   }
 
-  console.log(`Filled ${filledCount} shifts`);
+  console.log(`Filled ${filledCount} remaining shifts`);
 
-  // ===== STEP 3: Summary & Save =====
+  // ===== STEP 5: Summary & Save =====
   console.log("=== FINAL SUMMARY ===");
   let unmetCount = 0;
   allStaff.forEach(name => {
