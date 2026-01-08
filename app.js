@@ -636,7 +636,7 @@ shiftsContainer.style.gap = '2px';
 shiftsContainer.style.width = '100%';
 shiftsContainer.style.minHeight = '0';
 
-    // ===== PARA DAY =====
+  // ===== PARA DAY =====
 const pdSelect = document.createElement('select');
 pdSelect.style.width = '100%';
 pdSelect.style.padding = '2px';
@@ -649,11 +649,9 @@ pdSelect.style.minWidth = '0';
 pdSelect.style.flex = '1';
 pdSelect.innerHTML = '';
 
-// Empty option
 const pdEmptyOpt = document.createElement('option');
 pdEmptyOpt.value = '';
 pdEmptyOpt.textContent = '-- Select --';
-pdEmptyOpt.style.backgroundColor = '#ffffff';
 pdSelect.appendChild(pdEmptyOpt);
 
 const pdAvailable = getAvailableForShift(dateStr, 'Day');
@@ -662,24 +660,25 @@ const pdAvailableSet = new Set(pdAvailable);
 paraNames.forEach(name => {
   const option = document.createElement('option');
   option.value = name;
-  option.textContent = name;
-  
-  // GREEN if available, RED if not
-  if (pdAvailableSet.has(name)) {
-    option.style.backgroundColor = '#90EE90';  // Green
-    option.style.color = '#000';
-  } else {
-    option.style.backgroundColor = '#ffcccc';  // Red
-    option.style.color = '#666';
-  }
-  option.style.fontWeight = 'bold';
-  
+  // Add ✓ for available, ✗ for unavailable
+  const indicator = pdAvailableSet.has(name) ? '✓' : '✗';
+  option.textContent = `${indicator} ${name}`;
   pdSelect.appendChild(option);
 });
 
 pdSelect.value = entry.paraDay || '';
 pdSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraDay', e.target.value));
 shiftsContainer.appendChild(pdSelect);
+
+// Add status indicator label below
+const pdStatus = document.createElement('div');
+pdStatus.style.fontSize = '9px';
+pdStatus.style.fontWeight = 'bold';
+pdStatus.style.color = '#666';
+pdStatus.style.textAlign = 'center';
+pdStatus.style.marginTop = '1px';
+pdStatus.innerHTML = '✓=Available';
+shiftsContainer.appendChild(pdStatus);
 
 // ===== NURSE DAY =====
 const ndSelect = document.createElement('select');
@@ -697,7 +696,6 @@ ndSelect.innerHTML = '';
 const ndEmptyOpt = document.createElement('option');
 ndEmptyOpt.value = '';
 ndEmptyOpt.textContent = '-- Select --';
-ndEmptyOpt.style.backgroundColor = '#ffffff';
 ndSelect.appendChild(ndEmptyOpt);
 
 const ndAvailable = getAvailableForShift(dateStr, 'Day');
@@ -706,24 +704,25 @@ const ndAvailableSet = new Set(ndAvailable);
 rnNames.forEach(name => {
   const option = document.createElement('option');
   option.value = name;
-  option.textContent = name;
-  
-  // GREEN if available, RED if not
-  if (ndAvailableSet.has(name)) {
-    option.style.backgroundColor = '#90EE90';  // Green
-    option.style.color = '#000';
-  } else {
-    option.style.backgroundColor = '#ffcccc';  // Red
-    option.style.color = '#666';
-  }
-  option.style.fontWeight = 'bold';
-  
+  // Add ✓ for available, ✗ for unavailable
+  const indicator = ndAvailableSet.has(name) ? '✓' : '✗';
+  option.textContent = `${indicator} ${name}`;
   ndSelect.appendChild(option);
 });
 
 ndSelect.value = entry.nurseDay || '';
 ndSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseDay', e.target.value));
 shiftsContainer.appendChild(ndSelect);
+
+// Add status indicator label below
+const ndStatus = document.createElement('div');
+ndStatus.style.fontSize = '9px';
+ndStatus.style.fontWeight = 'bold';
+ndStatus.style.color = '#666';
+ndStatus.style.textAlign = 'center';
+ndStatus.style.marginTop = '1px';
+ndStatus.innerHTML = '✓=Available';
+shiftsContainer.appendChild(ndStatus);
 
 // ===== PARA NIGHT =====
 const pnSelect = document.createElement('select');
@@ -741,7 +740,6 @@ pnSelect.innerHTML = '';
 const pnEmptyOpt = document.createElement('option');
 pnEmptyOpt.value = '';
 pnEmptyOpt.textContent = '-- Select --';
-pnEmptyOpt.style.backgroundColor = '#ffffff';
 pnSelect.appendChild(pnEmptyOpt);
 
 const pnAvailable = getAvailableForShift(dateStr, 'Night');
@@ -750,24 +748,25 @@ const pnAvailableSet = new Set(pnAvailable);
 paraNames.forEach(name => {
   const option = document.createElement('option');
   option.value = name;
-  option.textContent = name;
-  
-  // GREEN if available, RED if not
-  if (pnAvailableSet.has(name)) {
-    option.style.backgroundColor = '#90EE90';  // Green
-    option.style.color = '#000';
-  } else {
-    option.style.backgroundColor = '#ffcccc';  // Red
-    option.style.color = '#666';
-  }
-  option.style.fontWeight = 'bold';
-  
+  // Add ✓ for available, ✗ for unavailable
+  const indicator = pnAvailableSet.has(name) ? '✓' : '✗';
+  option.textContent = `${indicator} ${name}`;
   pnSelect.appendChild(option);
 });
 
 pnSelect.value = entry.paraNight || '';
 pnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraNight', e.target.value));
 shiftsContainer.appendChild(pnSelect);
+
+// Add status indicator label below
+const pnStatus = document.createElement('div');
+pnStatus.style.fontSize = '9px';
+pnStatus.style.fontWeight = 'bold';
+pnStatus.style.color = '#666';
+pnStatus.style.textAlign = 'center';
+pnStatus.style.marginTop = '1px';
+pnStatus.innerHTML = '✓=Available';
+shiftsContainer.appendChild(pnStatus);
 
 // ===== NURSE NIGHT =====
 const nnSelect = document.createElement('select');
@@ -785,7 +784,6 @@ nnSelect.innerHTML = '';
 const nnEmptyOpt = document.createElement('option');
 nnEmptyOpt.value = '';
 nnEmptyOpt.textContent = '-- Select --';
-nnEmptyOpt.style.backgroundColor = '#ffffff';
 nnSelect.appendChild(nnEmptyOpt);
 
 const nnAvailable = getAvailableForShift(dateStr, 'Night');
@@ -794,24 +792,25 @@ const nnAvailableSet = new Set(nnAvailable);
 rnNames.forEach(name => {
   const option = document.createElement('option');
   option.value = name;
-  option.textContent = name;
-  
-  // GREEN if available, RED if not
-  if (nnAvailableSet.has(name)) {
-    option.style.backgroundColor = '#90EE90';  // Green
-    option.style.color = '#000';
-  } else {
-    option.style.backgroundColor = '#ffcccc';  // Red
-    option.style.color = '#666';
-  }
-  option.style.fontWeight = 'bold';
-  
+  // Add ✓ for available, ✗ for unavailable
+  const indicator = nnAvailableSet.has(name) ? '✓' : '✗';
+  option.textContent = `${indicator} ${name}`;
   nnSelect.appendChild(option);
 });
 
 nnSelect.value = entry.nurseNight || '';
 nnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseNight', e.target.value));
 shiftsContainer.appendChild(nnSelect);
+
+// Add status indicator label below
+const nnStatus = document.createElement('div');
+nnStatus.style.fontSize = '9px';
+nnStatus.style.fontWeight = 'bold';
+nnStatus.style.color = '#666';
+nnStatus.style.textAlign = 'center';
+nnStatus.style.marginTop = '1px';
+nnStatus.innerHTML = '✓=Available';
+shiftsContainer.appendChild(nnStatus);
 
 // Add shifts container to day cell
 dayCell.appendChild(shiftsContainer);
