@@ -1018,6 +1018,9 @@ getVacationCountForMonth(name, year, month) {
 
 // Update a roster cell with validation
 updateRosterCell(dateStr, shift, name) {
+  // Save the previous value in case we need to revert
+  const previousValue = this.generatedRoster[dateStr]?.[shift] || null;
+  
   // Check for day/night conflict (person can't work day and night same date, or night then day next date, or day then night next date)
   if (name) {
     const date = new Date(dateStr);
@@ -1033,10 +1036,14 @@ updateRosterCell(dateStr, shift, name) {
     
     if ((shift === 'paraDay' || shift === 'nurseDay') && nightShifts.includes(name)) {
       alert(`❌ ${name} is already scheduled for a NIGHT shift on this date. Cannot assign DAY shift.`);
+      // Reset the select back to previous value
+      this.renderRosterCalendar();
       return;
     }
     if ((shift === 'paraNight' || shift === 'nurseNight') && dayShifts.includes(name)) {
       alert(`❌ ${name} is already scheduled for a DAY shift on this date. Cannot assign NIGHT shift.`);
+      // Reset the select back to previous value
+      this.renderRosterCalendar();
       return;
     }
 
@@ -1045,6 +1052,8 @@ updateRosterCell(dateStr, shift, name) {
     const nextDayShifts = [nextDayEntry.paraDay, nextDayEntry.nurseDay];
     if ((shift === 'paraNight' || shift === 'nurseNight') && nextDayShifts.includes(name)) {
       alert(`❌ ${name} is already scheduled for a DAY shift on ${new Date(nextDateStr).toDateString()}. Cannot assign NIGHT shift the previous day.`);
+      // Reset the select back to previous value
+      this.renderRosterCalendar();
       return;
     }
 
@@ -1053,6 +1062,8 @@ updateRosterCell(dateStr, shift, name) {
     const nextNightShifts = [nextNightEntry.paraNight, nextNightEntry.nurseNight];
     if ((shift === 'paraDay' || shift === 'nurseDay') && nextNightShifts.includes(name)) {
       alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(nextDateStr).toDateString()}. Cannot assign DAY shift the previous day.`);
+      // Reset the select back to previous value
+      this.renderRosterCalendar();
       return;
     }
 
@@ -1085,6 +1096,8 @@ updateRosterCell(dateStr, shift, name) {
         if (!isOverrideEnabled) {
           // Override NOT checked - BLOCK the assignment
           alert(`❌ ${name} is already at or exceeds their target of ${adjustedTarget} shifts (currently has ${currentShifts}).\n\nTo override this restriction, check "Override Shift Cap" and try again.`);
+          // Reset the select back to previous value
+          this.renderRosterCalendar();
           return; // STOP - don't assign
         }
         // If we get here, override IS checked - allow the assignment with warning
