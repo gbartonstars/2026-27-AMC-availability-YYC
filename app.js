@@ -1879,6 +1879,16 @@ updateRosterCell(dateStr, shift, name) {
   console.log('=== VACATION DAYS ===');
   console.table(vacationDays);
 
+  // ==================== CALCULATE EXACT REQUIRED SHIFTS ====================
+  // This is what people MUST get (hardCap - vacation)
+  const requiredShifts = {};
+  allStaff.forEach(name => {
+    requiredShifts[name] = Math.max(0, hardCaps[name] - vacationDays[name]);
+  });
+
+  console.log('=== REQUIRED SHIFTS (target - vacation) ===');
+  console.table(requiredShifts);
+
   // ==================== HELPERS ====================
   const isAvailableForShift = (name, dateStr, shiftType) => {
     const staffDays = this.allAvailability[name] || {};
@@ -1930,9 +1940,8 @@ updateRosterCell(dateStr, shift, name) {
         .filter(name => {
           if (!isAvailableForShift(name, dateStr, 'Day')) return false;
           
-          // CHECK: Can they take one more?
-          const totalWillBe = vacationDays[name] + shiftsAssigned[name] + 1;
-          if (totalWillBe > hardCaps[name]) return false;
+          // CRITICAL: Can they take one more without EXCEEDING required?
+          if (shiftsAssigned[name] >= requiredShifts[name]) return false;
           
           const prevDate = new Date(d.getTime() - 24 * 60 * 60 * 1000);
           const prevDateStr = prevDate.toISOString().split('T')[0];
@@ -1941,7 +1950,8 @@ updateRosterCell(dateStr, shift, name) {
           
           return true;
         })
-        .sort((a, b) => shiftsAssigned[a] - shiftsAssigned[b]);
+        // PRIORITY: Assign to those furthest from their requirement
+        .sort((a, b) => (requiredShifts[a] - shiftsAssigned[a]) - (requiredShifts[b] - shiftsAssigned[b]));
 
       if (candidates.length > 0) {
         const assigned = candidates[0];
@@ -1956,8 +1966,7 @@ updateRosterCell(dateStr, shift, name) {
         .filter(name => {
           if (!isAvailableForShift(name, dateStr, 'Day')) return false;
           
-          const totalWillBe = vacationDays[name] + shiftsAssigned[name] + 1;
-          if (totalWillBe > hardCaps[name]) return false;
+          if (shiftsAssigned[name] >= requiredShifts[name]) return false;
           
           const prevDate = new Date(d.getTime() - 24 * 60 * 60 * 1000);
           const prevDateStr = prevDate.toISOString().split('T')[0];
@@ -1966,7 +1975,7 @@ updateRosterCell(dateStr, shift, name) {
           
           return true;
         })
-        .sort((a, b) => shiftsAssigned[a] - shiftsAssigned[b]);
+        .sort((a, b) => (requiredShifts[a] - shiftsAssigned[a]) - (requiredShifts[b] - shiftsAssigned[b]));
 
       if (candidates.length > 0) {
         const assigned = candidates[0];
@@ -1981,8 +1990,7 @@ updateRosterCell(dateStr, shift, name) {
         .filter(name => {
           if (!isAvailableForShift(name, dateStr, 'Night')) return false;
           
-          const totalWillBe = vacationDays[name] + shiftsAssigned[name] + 1;
-          if (totalWillBe > hardCaps[name]) return false;
+          if (shiftsAssigned[name] >= requiredShifts[name]) return false;
           
           if (!canWorkNight(name, dateStr)) return false;
           if (entry.paraDay === name) return false;
@@ -1994,7 +2002,7 @@ updateRosterCell(dateStr, shift, name) {
           
           return true;
         })
-        .sort((a, b) => shiftsAssigned[a] - shiftsAssigned[b]);
+        .sort((a, b) => (requiredShifts[a] - shiftsAssigned[a]) - (requiredShifts[b] - shiftsAssigned[b]));
 
       if (candidates.length > 0) {
         const assigned = candidates[0];
@@ -2009,8 +2017,7 @@ updateRosterCell(dateStr, shift, name) {
         .filter(name => {
           if (!isAvailableForShift(name, dateStr, 'Night')) return false;
           
-          const totalWillBe = vacationDays[name] + shiftsAssigned[name] + 1;
-          if (totalWillBe > hardCaps[name]) return false;
+          if (shiftsAssigned[name] >= requiredShifts[name]) return false;
           
           if (!canWorkNight(name, dateStr)) return false;
           if (entry.nurseDay === name) return false;
@@ -2022,7 +2029,7 @@ updateRosterCell(dateStr, shift, name) {
           
           return true;
         })
-        .sort((a, b) => shiftsAssigned[a] - shiftsAssigned[b]);
+        .sort((a, b) => (requiredShifts[a] - shiftsAssigned[a]) - (requiredShifts[b] - shiftsAssigned[b]));
 
       if (candidates.length > 0) {
         const assigned = candidates[0];
@@ -2040,30 +2047,29 @@ updateRosterCell(dateStr, shift, name) {
   this.renderRosterSummary();
   
   // ==================== FINAL VERIFICATION ====================
-  let message = '✅ Roster Generated!\n\n🎯 FINAL TOTALS (Work + Vacation):\n\n';
+  let message = '✅ Roster Generated!\n\n🎯 FINAL TOTALS (Should equal Target - Vacation):\n\n';
   
   let allGood = true;
   allStaff.forEach(name => {
-    const hardCap = hardCaps[name];
-    const vacation = vacationDays[name];
-    const work = shiftsAssigned[name];
-    const total = vacation + work;
+    const required = requiredShifts[name];
+    const assigned = shiftsAssigned[name];
     
     let status = '';
-    if (total > hardCap) {
-      status = '❌ OVER!';
+    if (assigned < required) {
+      status = `⚠️  SHORT by ${required - assigned}`;
       allGood = false;
-    } else if (total === hardCap) {
-      status = '✅ AT CAP';
+    } else if (assigned === required) {
+      status = '✅ EXACT';
     } else {
-      status = `(${hardCap - total} left)`;
+      status = `⚠️  OVER by ${assigned - required}`;
+      allGood = false;
     }
     
-    message += `${name}: ${work}work + ${vacation}vac = ${total}/${hardCap} ${status}\n`;
+    message += `${name}: ${assigned}/${required} ${status}\n`;
   });
   
   if (!allGood) {
-    message += '\n⚠️  ERROR: Some staff exceeded limits!';
+    message += '\n⚠️  WARNING: Not all staff have exact required shifts!';
   }
   
   alert(message);
