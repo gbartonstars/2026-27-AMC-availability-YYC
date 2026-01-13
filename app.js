@@ -1854,7 +1854,7 @@ updateRosterCell(dateStr, shift, name) {
   }
 
   // ==================== STEP 1: COUNT VACATION ====================
-  console.log('=== STEP 1: Counting vacation ===');
+  console.log('=== STEP 1: Counting vacation days ===');
   const vacationDays = {};
   allStaff.forEach(name => vacationDays[name] = 0);
 
@@ -1869,10 +1869,21 @@ updateRosterCell(dateStr, shift, name) {
       }
     });
   }
-  console.log('Vacation days:', vacationDays);
+  console.log('Vacation days by person:', vacationDays);
 
-  // ==================== STEP 2: PLACE IDEAL SCHEDULE ====================
-  console.log('\n=== STEP 2: Placing IDEAL SCHEDULE ===');
+  // ==================== STEP 2: CALCULATE THE HARD CAP ====================
+  // CRITICAL: This is what CANNOT be exceeded
+  console.log('\n=== STEP 2: Calculate hard caps (target - vacation) ===');
+  const hardCap = {};
+  allStaff.forEach(name => {
+    const target = minimumTable[name] || 0;
+    const vacation = vacationDays[name];
+    hardCap[name] = Math.max(0, target - vacation);
+  });
+  console.log('Hard caps:', hardCap);
+
+  // ==================== STEP 3: PLACE IDEAL SCHEDULE ====================
+  console.log('\n=== STEP 3: Placing ideal schedule ===');
   const shiftsFromIdeal = {};
   allStaff.forEach(name => shiftsFromIdeal[name] = 0);
 
@@ -1888,45 +1899,51 @@ updateRosterCell(dateStr, shift, name) {
       const nightIdeal = idealEntry.Night || '';
 
       if ((dayIdeal === 'D' || dayIdeal === 'Ideal Day') && paraNames.includes(providerName) && !entry.paraDay) {
-        console.log(`  ${dateStr}: ${providerName} → PARA DAY (ideal)`);
         entry.paraDay = providerName;
         shiftsFromIdeal[providerName]++;
       }
 
       if ((nightIdeal === 'N' || nightIdeal === 'Ideal Night') && paraNames.includes(providerName) && !entry.paraNight) {
-        console.log(`  ${dateStr}: ${providerName} → PARA NIGHT (ideal)`);
         entry.paraNight = providerName;
         shiftsFromIdeal[providerName]++;
       }
 
       if ((dayIdeal === 'D' || dayIdeal === 'Ideal Day') && rnNames.includes(providerName) && !entry.nurseDay) {
-        console.log(`  ${dateStr}: ${providerName} → NURSE DAY (ideal)`);
         entry.nurseDay = providerName;
         shiftsFromIdeal[providerName]++;
       }
 
       if ((nightIdeal === 'N' || nightIdeal === 'Ideal Night') && rnNames.includes(providerName) && !entry.nurseNight) {
-        console.log(`  ${dateStr}: ${providerName} → NURSE NIGHT (ideal)`);
         entry.nurseNight = providerName;
         shiftsFromIdeal[providerName]++;
       }
     });
   }
-
   console.log('Shifts from ideal schedule:', shiftsFromIdeal);
 
-  // ==================== STEP 3: CALCULATE MAXIMUM SHIFTS ALLOWED ====================
-  console.log('\n=== STEP 3: Calculating maximum allowed shifts (target - vacation) ===');
-  const maxShiftsAllowed = {};
+  // ==================== STEP 4: VERIFY IDEAL DOESN'T EXCEED CAP ====================
+  console.log('\n=== STEP 4: Verify ideal schedule respects caps ===');
+  let idealViolations = false;
   allStaff.forEach(name => {
-    const target = minimumTable[name] || 0;
-    const vacation = vacationDays[name];
-    // CRITICAL: Maximum shifts = target - vacation (NEVER exceed this)
-    maxShiftsAllowed[name] = target - vacation;
+    if (shiftsFromIdeal[name] > hardCap[name]) {
+      console.warn(`⚠️  IDEAL VIOLATION: ${name} has ${shiftsFromIdeal[name]} ideal shifts but cap is ${hardCap[name]}`);
+      idealViolations = true;
+    }
   });
-  console.log('Max shifts allowed (after vacation):', maxShiftsAllowed);
+  if (idealViolations) {
+    alert('⚠️ WARNING: Ideal schedule exceeds caps for some staff. Capping assignments now.');
+  }
 
-  // ==================== STEP 4: HELPERS ====================
+  // ==================== STEP 5: FILL WITH STRICT CAP ENFORCEMENT ====================
+  console.log('\n=== STEP 5: Fill shifts with STRICT cap enforcement ===');
+  const shiftsAssigned = {};
+  allStaff.forEach(name => shiftsAssigned[name] = shiftsFromIdeal[name]);
+
+  // Helper: Can this person accept ONE more shift?
+  const canAcceptOneMoreShift = (name) => {
+    return shiftsAssigned[name] < hardCap[name];
+  };
+
   const isAvailable = (name, dateStr, shiftType) => {
     const staffDays = this.allAvailability[name] || {};
     const entry = staffDays[dateStr] || {};
@@ -1948,18 +1965,6 @@ updateRosterCell(dateStr, shift, name) {
     return true;
   };
 
-  // ==================== STEP 5: FILL IDEAL + REQUIRED ====================
-  console.log('\n=== STEP 5: Filling ideal + required shifts ===');
-  const shiftsAssigned = {};
-  allStaff.forEach(name => shiftsAssigned[name] = shiftsFromIdeal[name]);
-
-  // Calculate how many MORE shifts each person needs
-  const shiftsStillNeeded = {};
-  allStaff.forEach(name => {
-    shiftsStillNeeded[name] = maxShiftsAllowed[name] - shiftsFromIdeal[name];
-  });
-  console.log('Shifts still needed:', shiftsStillNeeded);
-
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
     const dateStr = d.toISOString().split('T')[0];
@@ -1969,20 +1974,19 @@ updateRosterCell(dateStr, shift, name) {
     if (!entry.paraDay) {
       const candidates = paraNames
         .filter(name => {
-          // ONLY assign if they still NEED shifts
-          if (shiftsStillNeeded[name] <= 0) return false;
+          if (!canAcceptOneMoreShift(name)) return false;
           if (!isAvailable(name, dateStr, 'Day')) return false;
           const prevEntry = monthRoster[new Date(d.getTime() - 24*60*60*1000).toISOString().split('T')[0]];
           if (prevEntry && prevEntry.paraNight === name) return false;
           return true;
         })
-        .sort((a, b) => shiftsStillNeeded[b] - shiftsStillNeeded[a]); // Highest need first
+        .sort((a, b) => shiftsAssigned[a] - shiftsAssigned[b]);
 
       if (candidates.length > 0) {
         const name = candidates[0];
         entry.paraDay = name;
         shiftsAssigned[name]++;
-        shiftsStillNeeded[name]--;
+        console.log(`  ${dateStr}: ${name} → PARA DAY (now ${shiftsAssigned[name]}/${hardCap[name]})`);
       }
     }
 
@@ -1990,19 +1994,19 @@ updateRosterCell(dateStr, shift, name) {
     if (!entry.nurseDay) {
       const candidates = rnNames
         .filter(name => {
-          if (shiftsStillNeeded[name] <= 0) return false;
+          if (!canAcceptOneMoreShift(name)) return false;
           if (!isAvailable(name, dateStr, 'Day')) return false;
           const prevEntry = monthRoster[new Date(d.getTime() - 24*60*60*1000).toISOString().split('T')[0]];
           if (prevEntry && prevEntry.nurseNight === name) return false;
           return true;
         })
-        .sort((a, b) => shiftsStillNeeded[b] - shiftsStillNeeded[a]);
+        .sort((a, b) => shiftsAssigned[a] - shiftsAssigned[b]);
 
       if (candidates.length > 0) {
         const name = candidates[0];
         entry.nurseDay = name;
         shiftsAssigned[name]++;
-        shiftsStillNeeded[name]--;
+        console.log(`  ${dateStr}: ${name} → NURSE DAY (now ${shiftsAssigned[name]}/${hardCap[name]})`);
       }
     }
 
@@ -2010,7 +2014,7 @@ updateRosterCell(dateStr, shift, name) {
     if (!entry.paraNight) {
       const candidates = paraNames
         .filter(name => {
-          if (shiftsStillNeeded[name] <= 0) return false;
+          if (!canAcceptOneMoreShift(name)) return false;
           if (!isAvailable(name, dateStr, 'Night')) return false;
           if (!canWorkNight(name, dateStr)) return false;
           if (entry.paraDay === name) return false;
@@ -2018,13 +2022,13 @@ updateRosterCell(dateStr, shift, name) {
           if (nextEntry && nextEntry.paraDay === name) return false;
           return true;
         })
-        .sort((a, b) => shiftsStillNeeded[b] - shiftsStillNeeded[a]);
+        .sort((a, b) => shiftsAssigned[a] - shiftsAssigned[b]);
 
       if (candidates.length > 0) {
         const name = candidates[0];
         entry.paraNight = name;
         shiftsAssigned[name]++;
-        shiftsStillNeeded[name]--;
+        console.log(`  ${dateStr}: ${name} → PARA NIGHT (now ${shiftsAssigned[name]}/${hardCap[name]})`);
       }
     }
 
@@ -2032,7 +2036,7 @@ updateRosterCell(dateStr, shift, name) {
     if (!entry.nurseNight) {
       const candidates = rnNames
         .filter(name => {
-          if (shiftsStillNeeded[name] <= 0) return false;
+          if (!canAcceptOneMoreShift(name)) return false;
           if (!isAvailable(name, dateStr, 'Night')) return false;
           if (!canWorkNight(name, dateStr)) return false;
           if (entry.nurseDay === name) return false;
@@ -2040,13 +2044,13 @@ updateRosterCell(dateStr, shift, name) {
           if (nextEntry && nextEntry.nurseDay === name) return false;
           return true;
         })
-        .sort((a, b) => shiftsStillNeeded[b] - shiftsStillNeeded[a]);
+        .sort((a, b) => shiftsAssigned[a] - shiftsAssigned[b]);
 
       if (candidates.length > 0) {
         const name = candidates[0];
         entry.nurseNight = name;
         shiftsAssigned[name]++;
-        shiftsStillNeeded[name]--;
+        console.log(`  ${dateStr}: ${name} → NURSE NIGHT (now ${shiftsAssigned[name]}/${hardCap[name]})`);
       }
     }
   }
@@ -2061,31 +2065,31 @@ updateRosterCell(dateStr, shift, name) {
   this.renderRosterCalendar();
   this.updateRosterMonthLabel();
 
-  // ==================== STEP 7: VERIFY ====================
-  console.log('\n=== STEP 7: VERIFICATION ===');
-  let message = '✅ ROSTER GENERATED!\n\nBreakdown:\n';
+  // ==================== STEP 7: VERIFICATION ====================
+  console.log('\n=== STEP 7: FINAL VERIFICATION ===');
+  let message = '✅ ROSTER GENERATED!\n\n';
   let allGood = true;
   const allStaffList = ["Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant", "Dave Allison", "Mackenzie Wardle", "Chad Hegge", "Ken King", "John Doyle", "Bob Odney", "Kris Austin", "Kellie Ann Vogelaar", "Janice Kirkham", "Flo Butler", "Jodi Scott", "Carolyn Hogan", "Michelle Sexsmith"];
 
   allStaffList.forEach(name => {
     const target = minimumTable[name] || 0;
     const vacation = vacationDays[name];
+    const cap = hardCap[name];
     const ideal = shiftsFromIdeal[name];
     const assigned = shiftsAssigned[name];
     const total = vacation + assigned;
-    const maxAllowed = maxShiftsAllowed[name];
     
     let status = '';
-    if (assigned > maxAllowed) {
-      status = `❌ ASSIGNED ${assigned} but MAX is ${maxAllowed}`;
+    if (assigned > cap) {
+      status = `❌ OVER CAP by ${assigned - cap}`;
       allGood = false;
-    } else if (assigned === maxAllowed) {
+    } else if (assigned === cap) {
       status = '✅ PERFECT';
     } else {
-      status = `(${maxAllowed - assigned} not filled)`;
+      status = `⚠️ ${cap - assigned} slots empty`;
     }
     
-    message += `${name}: ${assigned}shifts(${ideal}ideal) +${vacation}vac=${total}/${target}max=${maxAllowed} ${status}\n`;
+    message += `${name}: ${assigned}shifts +${vacation}vac=${total} (cap=${cap}) ${status}\n`;
   });
 
   alert(message);
