@@ -1001,7 +1001,22 @@ renderRosterSummary() {
   html += '</tbody></table>';
   summaryEl.innerHTML = html;
 }
-// NEW: Update a roster cell and refresh
+// Helper function to count vacation days for a person in a month
+getVacationCountForMonth(name, year, month) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let count = 0;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const dateStr = d.toISOString().split('T')[0];
+    const staffEntry = this.allAvailability[name]?.[dateStr];
+    if (staffEntry?.Day === "V") {
+      count++;
+    }
+  }
+  return count;
+}
+
+// Update a roster cell with validation
 updateRosterCell(dateStr, shift, name) {
   // Check for day/night conflict (person can't work day and night same date, or night then day next date, or day then night next date)
   if (name) {
@@ -1010,73 +1025,75 @@ updateRosterCell(dateStr, shift, name) {
     const nextDate = new Date(date.getTime() + 24 * 60 * 60 * 1000);
     const prevDateStr = prevDate.toISOString().split('T')[0];
     const nextDateStr = nextDate.toISOString().split('T')[0];
+
+    // Same date: can't do both day and night
+    const sameDay = this.generatedRoster[dateStr] || {};
+    const dayShifts = [sameDay.paraDay, sameDay.nurseDay];
+    const nightShifts = [sameDay.paraNight, sameDay.nurseNight];
     
-    const isDay = shift.includes('Day');
-    const isNight = shift.includes('Night');
-    
-    // Check same day: can't work both day AND night
-    const otherShifts = {
-      'paraDay': 'paraNight',
-      'paraNight': 'paraDay',
-      'nurseDay': 'nurseNight',
-      'nurseNight': 'nurseDay'
-    };
-    const otherShift = otherShifts[shift];
-    
-    // ENSURE dateStr entry exists before checking
-    if (!this.generatedRoster[dateStr]) {
-      this.generatedRoster[dateStr] = {
-        paraDay: null,
-        nurseDay: null,
-        paraNight: null,
-        nurseNight: null,
-        conflicts: false
-      };
-    }
-    
-    if (otherShift && this.generatedRoster[dateStr][otherShift] === name) {
-      alert(`❌ ${name} is already scheduled for the other shift on this date. Cannot work both day and night on the same date.`);
+    if ((shift === 'paraDay' || shift === 'nurseDay') && nightShifts.includes(name)) {
+      alert(`❌ ${name} is already scheduled for a NIGHT shift on this date. Cannot assign DAY shift.`);
       return;
     }
-    
-    // Check previous day: if scheduling day shift, can't have worked night before
-    if (isDay) {
-      if (!this.generatedRoster[prevDateStr]) {
-        this.generatedRoster[prevDateStr] = {
-          paraDay: null,
-          nurseDay: null,
-          paraNight: null,
-          nurseNight: null,
-          conflicts: false
-        };
-      }
-      const prevNightShift = shift.includes('para') ? 'paraNight' : 'nurseNight';
-      if (this.generatedRoster[prevDateStr][prevNightShift] === name) {
-        alert(`❌ ${name} worked night on ${prevDateStr}. Cannot work day shift on ${dateStr}. Need recovery time.`);
-        return;
-      }
+    if ((shift === 'paraNight' || shift === 'nurseNight') && dayShifts.includes(name)) {
+      alert(`❌ ${name} is already scheduled for a DAY shift on this date. Cannot assign NIGHT shift.`);
+      return;
     }
+
+    // Night then day next date
+    const nextDayEntry = this.generatedRoster[nextDateStr] || {};
+    const nextDayShifts = [nextDayEntry.paraDay, nextDayEntry.nurseDay];
+    if ((shift === 'paraNight' || shift === 'nurseNight') && nextDayShifts.includes(name)) {
+      alert(`❌ ${name} is already scheduled for a DAY shift on ${new Date(nextDateStr).toDateString()}. Cannot assign NIGHT shift the previous day.`);
+      return;
+    }
+
+    // Day then night next date
+    const nextNightEntry = this.generatedRoster[nextDateStr] || {};
+    const nextNightShifts = [nextNightEntry.paraNight, nextNightEntry.nurseNight];
+    if ((shift === 'paraDay' || shift === 'nurseDay') && nextNightShifts.includes(name)) {
+      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(nextDateStr).toDateString()}. Cannot assign DAY shift the previous day.`);
+      return;
+    }
+
+    // NEW: Check if assigning this shift would exceed adjusted target
+    const year = new Date(dateStr).getFullYear();
+    const month = new Date(dateStr).getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const minimumTable = daysInMonth === 31 ? this.minimumRequired31 : this.minimumRequired30;
+    const counts = this.getRosterCountsForMonth();
     
-    // Check next day: if scheduling night shift, can't have day shift next
-    if (isNight) {
-      if (!this.generatedRoster[nextDateStr]) {
-        this.generatedRoster[nextDateStr] = {
-          paraDay: null,
-          nurseDay: null,
-          paraNight: null,
-          nurseNight: null,
-          conflicts: false
-        };
-      }
-      const nextDayShift = shift.includes('para') ? 'paraDay' : 'nurseDay';
-      if (this.generatedRoster[nextDateStr][nextDayShift] === name) {
-        alert(`❌ ${name} is scheduled for day on ${nextDateStr}. Cannot work night on ${dateStr}. Need recovery time.`);
+    const vacation = this.getVacationCountForMonth(name, year, month);
+    const target = minimumTable[name] || 0;
+    const noVacationReduction = ['Dave Allison', 'Chad Hegge', 'Bob Odney', 'Kellie Ann Vogelaar'];
+    const adjustedTarget = noVacationReduction.includes(name) ? target : Math.max(0, target - vacation);
+    
+    const currentShifts = counts[name]?.total || 0;
+    
+    // If they already have a shift on this date in THIS field, we're replacing it (no increase)
+    if (this.generatedRoster[dateStr] && this.generatedRoster[dateStr][shift] === name) {
+      // Replacing same shift, no issue - proceed
+    } else if (this.generatedRoster[dateStr]?.[shift]) {
+      // This slot is taken by someone else, we're replacing them - proceed
+    } else {
+      // New shift assignment - check if it exceeds target
+      if (currentShifts >= adjustedTarget) {
+        alert(`❌ ${name} is already at or exceeds their target of ${adjustedTarget} shifts (currently has ${currentShifts}). Cannot assign more shifts.\n\nTip: Assign this shift to someone else who is short.`);
         return;
       }
     }
   }
-  
-  // Assign the shift
+
+  // All validations passed - save the shift
+  if (!this.generatedRoster[dateStr]) {
+    this.generatedRoster[dateStr] = {
+      paraDay: null,
+      nurseDay: null,
+      paraNight: null,
+      nurseNight: null
+    };
+  }
+
   this.generatedRoster[dateStr][shift] = name || null;
   firebase.database().ref('generatedRoster').set(this.generatedRoster);
   this.renderRosterCalendar();
