@@ -962,11 +962,21 @@ renderRosterSummary() {
     const target = minimumTable[name] || 0;
     const vacation = vacationCounts[name] || 0;
     const gap = Math.max(0, target - c.total);
+    const overage = Math.max(0, c.total - target);
     
-    // Highlight row in LIGHT RED if deficiency
-    const rowBg = gap > 0 ? '#ffe6e6' : '#f9f9f9';
-    const gapColor = gap > 0 ? '#ff0000' : '#000';
-    const gapText = gap > 0 ? ` (⚠️ ${gap} short)` : '';
+    // Highlight row in LIGHT RED if deficiency, LIGHT YELLOW if overage
+    let rowBg = '#f9f9f9';
+    let gapText = '';
+    
+    if (gap > 0) {
+      rowBg = '#ffe6e6';  // Light red for shortage
+      gapText = ` (⚠️ ${gap} short)`;
+    } else if (overage > 0) {
+      rowBg = '#fffacd';  // Light yellow for overage
+      gapText = ` (📌 ${overage} over)`;
+    }
+    
+    const gapColor = gap > 0 ? '#ff0000' : overage > 0 ? '#ff9900' : '#000';
 
     html += `<tr style="background: ${rowBg};">`;
     html += `<td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">${name}</td>`;
