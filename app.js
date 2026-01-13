@@ -1014,13 +1014,33 @@ updateRosterCell(dateStr, shift, name) {
     };
     const otherShift = otherShifts[shift];
     
+    // ENSURE dateStr entry exists before checking
+    if (!this.generatedRoster[dateStr]) {
+      this.generatedRoster[dateStr] = {
+        paraDay: null,
+        nurseDay: null,
+        paraNight: null,
+        nurseNight: null,
+        conflicts: false
+      };
+    }
+    
     if (otherShift && this.generatedRoster[dateStr][otherShift] === name) {
       alert(`❌ ${name} is already scheduled for the other shift on this date. Cannot work both day and night on the same date.`);
       return;
     }
     
     // Check previous day: if scheduling day shift, can't have worked night before
-    if (isDay && this.generatedRoster[prevDateStr]) {
+    if (isDay) {
+      if (!this.generatedRoster[prevDateStr]) {
+        this.generatedRoster[prevDateStr] = {
+          paraDay: null,
+          nurseDay: null,
+          paraNight: null,
+          nurseNight: null,
+          conflicts: false
+        };
+      }
       const prevNightShift = shift.includes('para') ? 'paraNight' : 'nurseNight';
       if (this.generatedRoster[prevDateStr][prevNightShift] === name) {
         alert(`❌ ${name} worked night on ${prevDateStr}. Cannot work day shift on ${dateStr}. Need recovery time.`);
@@ -1029,7 +1049,16 @@ updateRosterCell(dateStr, shift, name) {
     }
     
     // Check next day: if scheduling night shift, can't have day shift next
-    if (isNight && this.generatedRoster[nextDateStr]) {
+    if (isNight) {
+      if (!this.generatedRoster[nextDateStr]) {
+        this.generatedRoster[nextDateStr] = {
+          paraDay: null,
+          nurseDay: null,
+          paraNight: null,
+          nurseNight: null,
+          conflicts: false
+        };
+      }
       const nextDayShift = shift.includes('para') ? 'paraDay' : 'nurseDay';
       if (this.generatedRoster[nextDateStr][nextDayShift] === name) {
         alert(`❌ ${name} is scheduled for day on ${nextDateStr}. Cannot work night on ${dateStr}. Need recovery time.`);
