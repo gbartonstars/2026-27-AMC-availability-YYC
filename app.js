@@ -982,7 +982,15 @@ renderRosterSummary() {
   html += '</tbody></table>';
   summaryEl.innerHTML = html;
 }
-
+// NEW: Update a roster cell and refresh
+updateRosterCell(dateStr, shift, name) {
+  // Assign the shift
+  this.generatedRoster[dateStr][shift] = name || null;
+  firebase.database().ref('generatedRoster').set(this.generatedRoster);
+  this.renderRosterCalendar();
+  this.renderRosterSummary();
+}
+  
   renderCalendar() {
     const calendarEl = document.getElementById('calendar');
     calendarEl.innerHTML = '';
