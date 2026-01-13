@@ -1955,6 +1955,15 @@ updateRosterCell(dateStr, shift, name) {
     return true;
   };
 
+  // Helper: Check if person can accept another shift (STRICT CAP CHECK)
+  const canAcceptShift = (name) => {
+    const cap = minimumTable[name] || 0;
+    const vacation = vacationDays[name];
+    const assigned = shiftsAssigned[name];
+    // HARD RULE: vacation + assigned must NOT exceed cap
+    return (vacation + assigned) < cap;
+  };
+
   // ==================== STEP 5: FILL REQUIRED SHIFTS ====================
   console.log('\n=== STEP 5: Filling REQUIRED shifts (respecting hard caps) ===');
   const shiftsAssigned = {};
@@ -1969,10 +1978,7 @@ updateRosterCell(dateStr, shift, name) {
     if (!entry.paraDay) {
       const candidates = paraNames
         .filter(name => {
-          const cap = minimumTable[name] || 0;
-          const vacation = vacationDays[name];
-          // HARD CAP: assigned + vacation cannot exceed cap
-          if (shiftsAssigned[name] + vacation >= cap) return false;
+          if (!canAcceptShift(name)) return false;
           if (!isAvailable(name, dateStr, 'Day')) return false;
           const prevEntry = monthRoster[new Date(d.getTime() - 24*60*60*1000).toISOString().split('T')[0]];
           if (prevEntry && prevEntry.paraNight === name) return false;
@@ -1996,9 +2002,7 @@ updateRosterCell(dateStr, shift, name) {
     if (!entry.nurseDay) {
       const candidates = rnNames
         .filter(name => {
-          const cap = minimumTable[name] || 0;
-          const vacation = vacationDays[name];
-          if (shiftsAssigned[name] + vacation >= cap) return false;
+          if (!canAcceptShift(name)) return false;
           if (!isAvailable(name, dateStr, 'Day')) return false;
           const prevEntry = monthRoster[new Date(d.getTime() - 24*60*60*1000).toISOString().split('T')[0]];
           if (prevEntry && prevEntry.nurseNight === name) return false;
@@ -2021,9 +2025,7 @@ updateRosterCell(dateStr, shift, name) {
     if (!entry.paraNight) {
       const candidates = paraNames
         .filter(name => {
-          const cap = minimumTable[name] || 0;
-          const vacation = vacationDays[name];
-          if (shiftsAssigned[name] + vacation >= cap) return false;
+          if (!canAcceptShift(name)) return false;
           if (!isAvailable(name, dateStr, 'Night')) return false;
           if (!canWorkNight(name, dateStr)) return false;
           if (entry.paraDay === name) return false;
@@ -2048,9 +2050,7 @@ updateRosterCell(dateStr, shift, name) {
     if (!entry.nurseNight) {
       const candidates = rnNames
         .filter(name => {
-          const cap = minimumTable[name] || 0;
-          const vacation = vacationDays[name];
-          if (shiftsAssigned[name] + vacation >= cap) return false;
+          if (!canAcceptShift(name)) return false;
           if (!isAvailable(name, dateStr, 'Night')) return false;
           if (!canWorkNight(name, dateStr)) return false;
           if (entry.nurseDay === name) return false;
@@ -2084,9 +2084,7 @@ updateRosterCell(dateStr, shift, name) {
     if (!entry.paraDay) {
       const candidates = paraNames
         .filter(name => {
-          const cap = minimumTable[name] || 0;
-          const vacation = vacationDays[name];
-          if (shiftsAssigned[name] + vacation >= cap) return false;
+          if (!canAcceptShift(name)) return false;
           if (!isAvailable(name, dateStr, 'Day')) return false;
           const prevEntry = monthRoster[new Date(d.getTime() - 24*60*60*1000).toISOString().split('T')[0]];
           if (prevEntry && prevEntry.paraNight === name) return false;
@@ -2105,9 +2103,7 @@ updateRosterCell(dateStr, shift, name) {
     if (!entry.nurseDay) {
       const candidates = rnNames
         .filter(name => {
-          const cap = minimumTable[name] || 0;
-          const vacation = vacationDays[name];
-          if (shiftsAssigned[name] + vacation >= cap) return false;
+          if (!canAcceptShift(name)) return false;
           if (!isAvailable(name, dateStr, 'Day')) return false;
           const prevEntry = monthRoster[new Date(d.getTime() - 24*60*60*1000).toISOString().split('T')[0]];
           if (prevEntry && prevEntry.nurseNight === name) return false;
@@ -2126,9 +2122,7 @@ updateRosterCell(dateStr, shift, name) {
     if (!entry.paraNight) {
       const candidates = paraNames
         .filter(name => {
-          const cap = minimumTable[name] || 0;
-          const vacation = vacationDays[name];
-          if (shiftsAssigned[name] + vacation >= cap) return false;
+          if (!canAcceptShift(name)) return false;
           if (!isAvailable(name, dateStr, 'Night')) return false;
           if (!canWorkNight(name, dateStr)) return false;
           if (entry.paraDay === name) return false;
@@ -2149,9 +2143,7 @@ updateRosterCell(dateStr, shift, name) {
     if (!entry.nurseNight) {
       const candidates = rnNames
         .filter(name => {
-          const cap = minimumTable[name] || 0;
-          const vacation = vacationDays[name];
-          if (shiftsAssigned[name] + vacation >= cap) return false;
+          if (!canAcceptShift(name)) return false;
           if (!isAvailable(name, dateStr, 'Night')) return false;
           if (!canWorkNight(name, dateStr)) return false;
           if (entry.nurseDay === name) return false;
