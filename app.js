@@ -1835,8 +1835,6 @@ updateRosterCell(dateStr, shift, name) {
 
   // Generate roster for the current roster month (ideal-aware, no double shifts)
   onGenerateRoster() {
-  console.log('🔧 Starting roster generation...');
-  
   const year = this.rosterDate.getFullYear();
   const month = this.rosterDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -1853,58 +1851,31 @@ updateRosterCell(dateStr, shift, name) {
   // Initialize roster
   this.generatedRoster = this.generatedRoster || {};
 
-  // ==================== STEP 1: Calculate hard caps ====================
-  const maxAllowedShifts = {};
+  // ==================== GET HARD CAPS ====================
+  // This is what they CAN work (target itself, NO vacation added)
+  const hardCaps = {};
+  allStaff.forEach(name => {
+    hardCaps[name] = minimumTable[name] || 0;
+  });
+
+  // ==================== GET CURRENT TOTALS ====================
+  // This includes EVERYTHING: work shifts + vacation shifts
+  const currentTotals = this.getRosterCountsForMonth();
   
+  // ==================== CALCULATE AVAILABLE SLOTS ====================
+  // availableSlots = hardCap - currentTotal
+  const availableSlots = {};
   allStaff.forEach(name => {
-    const baseTarget = minimumTable[name] || 0;
-    let vacationCount = 0;
-
-    // Count vacation shifts VERY CAREFULLY
-    for (let day = 1; day <= daysInMonth; day++) {
-      const d = new Date(year, month, day);
-      const dateStr = d.toISOString().split('T')[0];
-      
-      const staffDays = this.allAvailability[name] || {};
-      const entry = staffDays[dateStr];
-      
-      // Only count 'V' (vacation) entries, NOT manual roster assignments
-      if (entry && entry.Day === "V") {
-        vacationCount++;
-      }
-    }
-
-    if (noVacationReduction.includes(name)) {
-      maxAllowedShifts[name] = baseTarget; // Full target, no reduction
-    } else {
-      maxAllowedShifts[name] = Math.max(0, baseTarget - vacationCount);
-    }
-
-    console.log(`${name}: Target=${baseTarget}, Vacation=${vacationCount}, MaxShifts=${maxAllowedShifts[name]}`);
+    const hardCap = hardCaps[name];
+    const currentTotal = currentTotals[name]?.total || 0;
+    availableSlots[name] = Math.max(0, hardCap - currentTotal);
   });
 
-  // ==================== STEP 2: Count existing assignments ====================
-  const shiftCounts = {};
-  allStaff.forEach(name => {
-    shiftCounts[name] = 0;
-  });
+  console.log('Hard Caps:', hardCaps);
+  console.log('Current Totals (including vacation):', currentTotals);
+  console.log('Available Work Slots:', availableSlots);
 
-  for (let day = 1; day <= daysInMonth; day++) {
-    const d = new Date(year, month, day);
-    const dateStr = d.toISOString().split('T')[0];
-    
-    if (this.generatedRoster[dateStr]) {
-      const existing = this.generatedRoster[dateStr];
-      if (existing.paraDay) shiftCounts[existing.paraDay]++;
-      if (existing.nurseDay) shiftCounts[existing.nurseDay]++;
-      if (existing.paraNight) shiftCounts[existing.paraNight]++;
-      if (existing.nurseNight) shiftCounts[existing.nurseNight]++;
-    }
-  }
-
-  console.log('Current shift counts:', shiftCounts);
-
-  // ==================== STEP 3: Helpers ====================
+  // ==================== HELPERS ====================
   const isAvailableForShift = (name, dateStr, shiftType) => {
     const staffDays = this.allAvailability[name] || {};
     const entry = staffDays[dateStr];
@@ -1927,7 +1898,13 @@ updateRosterCell(dateStr, shift, name) {
     return true;
   };
 
-  // ==================== STEP 4: Generate assignments ====================
+  // ==================== GENERATE ASSIGNMENTS ====================
+  // Track how many shifts WE'RE ASSIGNING (not including existing vacation)
+  const shiftsAssigned = {};
+  allStaff.forEach(name => {
+    shiftsAssigned[name] = 0;
+  });
+
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
     const dateStr = d.toISOString().split('T')[0];
@@ -1958,21 +1935,26 @@ updateRosterCell(dateStr, shift, name) {
         .filter(name => {
           // Must be available
           if (!isAvailableForShift(name, dateStr, 'Day')) return false;
-          // HARD CAP: Must be UNDER maximum allowed (not equal)
-          if (shiftCounts[name] >= maxAllowedShifts[name]) return false;
+          
+          // HARD CAP: currentTotal + shiftsAssigned must be LESS THAN hardCap
+          const current = currentTotals[name]?.total || 0;
+          const willBe = current + shiftsAssigned[name] + 1;
+          if (willBe > hardCaps[name]) return false;
+          
           // Can't work night before
           const prevDate = new Date(d.getTime() - 24 * 60 * 60 * 1000);
           const prevDateStr = prevDate.toISOString().split('T')[0];
           const prevEntry = this.generatedRoster[prevDateStr];
           if (prevEntry && prevEntry.paraNight === name) return false;
+          
           return true;
         })
-        .sort((a, b) => shiftCounts[a] - shiftCounts[b]);
+        .sort((a, b) => shiftsAssigned[a] - shiftsAssigned[b]);
 
       if (candidates.length > 0) {
         const assigned = candidates[0];
         this.generatedRoster[dateStr].paraDay = assigned;
-        shiftCounts[assigned]++;
+        shiftsAssigned[assigned]++;
       }
     }
 
@@ -1981,19 +1963,24 @@ updateRosterCell(dateStr, shift, name) {
       const candidates = rnNames
         .filter(name => {
           if (!isAvailableForShift(name, dateStr, 'Day')) return false;
-          if (shiftCounts[name] >= maxAllowedShifts[name]) return false;
+          
+          const current = currentTotals[name]?.total || 0;
+          const willBe = current + shiftsAssigned[name] + 1;
+          if (willBe > hardCaps[name]) return false;
+          
           const prevDate = new Date(d.getTime() - 24 * 60 * 60 * 1000);
           const prevDateStr = prevDate.toISOString().split('T')[0];
           const prevEntry = this.generatedRoster[prevDateStr];
           if (prevEntry && prevEntry.nurseNight === name) return false;
+          
           return true;
         })
-        .sort((a, b) => shiftCounts[a] - shiftCounts[b]);
+        .sort((a, b) => shiftsAssigned[a] - shiftsAssigned[b]);
 
       if (candidates.length > 0) {
         const assigned = candidates[0];
         this.generatedRoster[dateStr].nurseDay = assigned;
-        shiftCounts[assigned]++;
+        shiftsAssigned[assigned]++;
       }
     }
 
@@ -2002,21 +1989,27 @@ updateRosterCell(dateStr, shift, name) {
       const candidates = paraNames
         .filter(name => {
           if (!isAvailableForShift(name, dateStr, 'Night')) return false;
-          if (shiftCounts[name] >= maxAllowedShifts[name]) return false;
+          
+          const current = currentTotals[name]?.total || 0;
+          const willBe = current + shiftsAssigned[name] + 1;
+          if (willBe > hardCaps[name]) return false;
+          
           if (!canWorkNight(name, dateStr)) return false;
           if (entry.paraDay === name) return false;
+          
           const nextDate = new Date(d.getTime() + 24 * 60 * 60 * 1000);
           const nextDateStr = nextDate.toISOString().split('T')[0];
           const nextEntry = this.generatedRoster[nextDateStr];
           if (nextEntry && nextEntry.paraDay === name) return false;
+          
           return true;
         })
-        .sort((a, b) => shiftCounts[a] - shiftCounts[b]);
+        .sort((a, b) => shiftsAssigned[a] - shiftsAssigned[b]);
 
       if (candidates.length > 0) {
         const assigned = candidates[0];
         this.generatedRoster[dateStr].paraNight = assigned;
-        shiftCounts[assigned]++;
+        shiftsAssigned[assigned]++;
       }
     }
 
@@ -2025,52 +2018,59 @@ updateRosterCell(dateStr, shift, name) {
       const candidates = rnNames
         .filter(name => {
           if (!isAvailableForShift(name, dateStr, 'Night')) return false;
-          if (shiftCounts[name] >= maxAllowedShifts[name]) return false;
+          
+          const current = currentTotals[name]?.total || 0;
+          const willBe = current + shiftsAssigned[name] + 1;
+          if (willBe > hardCaps[name]) return false;
+          
           if (!canWorkNight(name, dateStr)) return false;
           if (entry.nurseDay === name) return false;
+          
           const nextDate = new Date(d.getTime() + 24 * 60 * 60 * 1000);
           const nextDateStr = nextDate.toISOString().split('T')[0];
           const nextEntry = this.generatedRoster[nextDateStr];
           if (nextEntry && nextEntry.nurseDay === name) return false;
+          
           return true;
         })
-        .sort((a, b) => shiftCounts[a] - shiftCounts[b]);
+        .sort((a, b) => shiftsAssigned[a] - shiftsAssigned[b]);
 
       if (candidates.length > 0) {
         const assigned = candidates[0];
         this.generatedRoster[dateStr].nurseNight = assigned;
-        shiftCounts[assigned]++;
+        shiftsAssigned[assigned]++;
       }
     }
   }
 
-  // ==================== STEP 5: Save and display ====================
+  // Save to Firebase
   firebase.database().ref('generatedRoster').set(this.generatedRoster);
   
+  // Refresh display
   this.renderRosterCalendar();
   this.renderRosterSummary();
   
-  // Final verification
-  let message = '✅ Roster generated!\n\n🎯 Final Shift Counts:\n\n';
+  // ==================== FINAL ALERT ====================
+  let message = '✅ Roster generated!\n\n🎯 Final Totals (Including Vacation):\n\n';
   allStaff.forEach(name => {
-    const max = maxAllowedShifts[name];
-    const actual = shiftCounts[name];
+    const hardCap = hardCaps[name];
+    const finalTotal = (currentTotals[name]?.total || 0) + shiftsAssigned[name];
     let status = '';
     
-    if (actual > max) {
-      status = '❌ OVER LIMIT';
-    } else if (actual === max) {
+    if (finalTotal > hardCap) {
+      status = '❌ OVER LIMIT!';
+    } else if (finalTotal === hardCap) {
       status = '✅ AT LIMIT';
     } else {
-      status = `(${max - actual} remaining)`;
+      status = `(${hardCap - finalTotal} under)`;
     }
     
-    message += `${name}: ${actual}/${max} ${status}\n`;
+    message += `${name}: ${finalTotal}/${hardCap} ${status}\n`;
   });
   
   alert(message);
-  console.log('Final shifts:', shiftCounts);
 }
+  
 loadRosterFromFirebase() {
     firebase.database().ref("generatedRoster").on('value', (snapshot) => {
       if (snapshot.exists()) {
