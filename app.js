@@ -959,8 +959,17 @@ renderRosterSummary() {
 
   allStaff.forEach(name => {
     const c = counts[name] || { total: 0, day: 0, night: 0, weekend: 0 };
-    const target = minimumTable[name] || 0;
+    let target = minimumTable[name] || 0;
     const vacation = vacationCounts[name] || 0;
+    
+    // EXCEPTION: Dave, Chad, Bob, Kellie Ann don't reduce target for vacation
+    const noVacationReduction = ['Dave Allison', 'Chad Hegge', 'Bob Odney', 'Kellie Ann Vogelaar'];
+    
+    // Reduce target by vacation days for everyone EXCEPT the exceptions
+    if (!noVacationReduction.includes(name)) {
+      target = Math.max(0, target - vacation);
+    }
+    
     const gap = Math.max(0, target - c.total);
     const overage = Math.max(0, c.total - target);
     
