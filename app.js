@@ -1703,19 +1703,24 @@ renderRosterSummary() {
   const month = this.rosterDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Initialize generatedRoster
+  // Initialize generatedRoster for THIS month only (preserve other months)
+if (!this.generatedRoster) {
   this.generatedRoster = {};
-  for (let day = 1; day <= daysInMonth; day++) {
-    const d = new Date(year, month, day);
-    const dateStr = d.toISOString().split('T')[0];
-    this.generatedRoster[dateStr] = {
-      paraDay: null,
-      nurseDay: null,
-      paraNight: null,
-      nurseNight: null,
-      conflicts: false
-    };
-  }
+}
+
+for (let day = 1; day <= daysInMonth; day++) {
+  const d = new Date(year, month, day);
+  const dateStr = d.toISOString().split('T')[0];
+
+  // Always reset the current month’s days before generating
+  this.generatedRoster[dateStr] = {
+    paraDay: null,
+    nurseDay: null,
+    paraNight: null,
+    nurseNight: null,
+    conflicts: false
+  };
+}
 
   console.log(`ROSTER GENERATION START`);
   console.log(`Month: ${this.monthNames[month]} ${year}`);
