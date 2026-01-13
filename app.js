@@ -2200,7 +2200,7 @@ for (let day = 1; day <= daysInMonth; day++) {
     `See F12 console for details.`
   );
 }
-  
+
 loadRosterFromFirebase() {
     firebase.database().ref("generatedRoster").on('value', (snapshot) => {
       if (snapshot.exists()) {
