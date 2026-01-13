@@ -994,6 +994,50 @@ renderRosterSummary() {
 }
 // NEW: Update a roster cell and refresh
 updateRosterCell(dateStr, shift, name) {
+  // Check for day/night conflict (person can't work day and night same date, or night then day next date, or day then night next date)
+  if (name) {
+    const date = new Date(dateStr);
+    const prevDate = new Date(date.getTime() - 24 * 60 * 60 * 1000);
+    const nextDate = new Date(date.getTime() + 24 * 60 * 60 * 1000);
+    const prevDateStr = prevDate.toISOString().split('T')[0];
+    const nextDateStr = nextDate.toISOString().split('T')[0];
+    
+    const isDay = shift.includes('Day');
+    const isNight = shift.includes('Night');
+    
+    // Check same day: can't work both day AND night
+    const otherShifts = {
+      'paraDay': 'paraNight',
+      'paraNight': 'paraDay',
+      'nurseDay': 'nurseNight',
+      'nurseNight': 'nurseDay'
+    };
+    const otherShift = otherShifts[shift];
+    
+    if (otherShift && this.generatedRoster[dateStr][otherShift] === name) {
+      alert(`❌ ${name} is already scheduled for the other shift on this date. Cannot work both day and night on the same date.`);
+      return;
+    }
+    
+    // Check previous day: if scheduling day shift, can't have worked night before
+    if (isDay && this.generatedRoster[prevDateStr]) {
+      const prevNightShift = shift.includes('para') ? 'paraNight' : 'nurseNight';
+      if (this.generatedRoster[prevDateStr][prevNightShift] === name) {
+        alert(`❌ ${name} worked night on ${prevDateStr}. Cannot work day shift on ${dateStr}. Need recovery time.`);
+        return;
+      }
+    }
+    
+    // Check next day: if scheduling night shift, can't have day shift next
+    if (isNight && this.generatedRoster[nextDateStr]) {
+      const nextDayShift = shift.includes('para') ? 'paraDay' : 'nurseDay';
+      if (this.generatedRoster[nextDateStr][nextDayShift] === name) {
+        alert(`❌ ${name} is scheduled for day on ${nextDateStr}. Cannot work night on ${dateStr}. Need recovery time.`);
+        return;
+      }
+    }
+  }
+  
   // Assign the shift
   this.generatedRoster[dateStr][shift] = name || null;
   firebase.database().ref('generatedRoster').set(this.generatedRoster);
