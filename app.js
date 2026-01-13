@@ -1078,8 +1078,17 @@ updateRosterCell(dateStr, shift, name) {
     } else {
       // New shift assignment - check if it exceeds target
       if (currentShifts >= adjustedTarget) {
-        alert(`❌ ${name} is already at or exceeds their target of ${adjustedTarget} shifts (currently has ${currentShifts}). Cannot assign more shifts.\n\nTip: Assign this shift to someone else who is short.`);
-        return;
+        // Check if override checkbox is checked
+        const overrideCheckbox = document.getElementById('overrideShiftCap');
+        const isOverrideEnabled = overrideCheckbox && overrideCheckbox.checked;
+        
+        if (!isOverrideEnabled) {
+          // Override NOT checked - BLOCK the assignment
+          alert(`❌ ${name} is already at or exceeds their target of ${adjustedTarget} shifts (currently has ${currentShifts}).\n\nTo override this restriction, check "Override Shift Cap" and try again.`);
+          return; // STOP - don't assign
+        }
+        // If we get here, override IS checked - allow the assignment with warning
+        alert(`⚠️ Override enabled: ${name} will exceed their target of ${adjustedTarget} shifts (currently has ${currentShifts}). Assigning anyway.`);
       }
     }
   }
