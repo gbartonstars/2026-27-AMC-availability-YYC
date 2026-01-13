@@ -1845,72 +1845,26 @@ updateRosterCell(dateStr, shift, name) {
   const paraNames = ["Greg Barton", "Scott McTaggart", "Dave Allison", "Mackenzie Wardle", "Chad Hegge", "Ken King", "John Doyle", "Bob Odney"];
   const allStaff = rnNames.concat(paraNames);
 
-  // People who DON'T have vacation reduction
-  const noVacationReduction = ['Dave Allison', 'Chad Hegge', 'Bob Odney', 'Kellie Ann Vogelaar'];
-
-  // Initialize roster
   this.generatedRoster = this.generatedRoster || {};
 
-  // ==================== COUNT EXISTING SHIFTS FROM AVAILABILITY ====================
-  // This counts VACATION days (V) and any existing assignments
-  const workShifts = {}; // Only work shifts
-  const vacationShifts = {}; // Only vacation days
-  
-  allStaff.forEach(name => {
-    workShifts[name] = 0;
-    vacationShifts[name] = 0;
-  });
-
-  // Count vacation from availability data
-  for (let day = 1; day <= daysInMonth; day++) {
-    const d = new Date(year, month, day);
-    const dateStr = d.toISOString().split('T')[0];
-    
-    allStaff.forEach(name => {
-      const staffDays = this.allAvailability[name] || {};
-      const entry = staffDays[dateStr];
-      
-      // Count vacation days
-      if (entry && entry.Day === "V") {
-        vacationShifts[name]++;
-      }
-    });
-  }
-
-  // Count existing work shifts from generatedRoster
-  for (let day = 1; day <= daysInMonth; day++) {
-    const d = new Date(year, month, day);
-    const dateStr = d.toISOString().split('T')[0];
-    
-    if (this.generatedRoster[dateStr]) {
-      const existing = this.generatedRoster[dateStr];
-      if (existing.paraDay) workShifts[existing.paraDay]++;
-      if (existing.nurseDay) workShifts[existing.nurseDay]++;
-      if (existing.paraNight) workShifts[existing.paraNight]++;
-      if (existing.nurseNight) workShifts[existing.nurseNight]++;
-    }
-  }
-
-  console.log('Work Shifts:', workShifts);
-  console.log('Vacation Shifts:', vacationShifts);
-
-  // ==================== CALCULATE HARD CAPS ====================
+  // ==================== GET HARD CAPS ====================
   const hardCaps = {};
   allStaff.forEach(name => {
     hardCaps[name] = minimumTable[name] || 0;
   });
 
-  // ==================== CALCULATE AVAILABLE SLOTS ====================
-  // availableSlots = hardCap - (workShifts + vacationShifts)
+  // ==================== GET CURRENT TOTAL COUNTS (includes vacation + work) ====================
+  const currentCounts = this.getRosterCountsForMonth();
+  
+  // ==================== BUILD ACTUAL AVAILABLE SLOTS ====================
   const availableSlots = {};
   allStaff.forEach(name => {
     const hardCap = hardCaps[name];
-    const total = workShifts[name] + vacationShifts[name];
-    availableSlots[name] = Math.max(0, hardCap - total);
+    const currentTotal = currentCounts[name]?.total || 0;
+    availableSlots[name] = Math.max(0, hardCap - currentTotal);
+    
+    console.log(`${name}: hardCap=${hardCap}, currentTotal=${currentTotal}, available=${availableSlots[name]}`);
   });
-
-  console.log('Hard Caps:', hardCaps);
-  console.log('Available Slots:', availableSlots);
 
   // ==================== HELPERS ====================
   const isAvailableForShift = (name, dateStr, shiftType) => {
@@ -1965,11 +1919,8 @@ updateRosterCell(dateStr, shift, name) {
       const candidates = paraNames
         .filter(name => {
           if (!isAvailableForShift(name, dateStr, 'Day')) return false;
-          
-          // Can they take another shift?
           if (availableSlots[name] <= 0) return false;
           
-          // Can't work night before
           const prevDate = new Date(d.getTime() - 24 * 60 * 60 * 1000);
           const prevDateStr = prevDate.toISOString().split('T')[0];
           const prevEntry = this.generatedRoster[prevDateStr];
@@ -1977,12 +1928,11 @@ updateRosterCell(dateStr, shift, name) {
           
           return true;
         })
-        .sort((a, b) => availableSlots[a] - availableSlots[b]); // Assign to those with fewer slots remaining
+        .sort((a, b) => availableSlots[a] - availableSlots[b]);
 
       if (candidates.length > 0) {
         const assigned = candidates[0];
         this.generatedRoster[dateStr].paraDay = assigned;
-        workShifts[assigned]++;
         availableSlots[assigned]--;
       }
     }
@@ -2006,7 +1956,6 @@ updateRosterCell(dateStr, shift, name) {
       if (candidates.length > 0) {
         const assigned = candidates[0];
         this.generatedRoster[dateStr].nurseDay = assigned;
-        workShifts[assigned]++;
         availableSlots[assigned]--;
       }
     }
@@ -2032,7 +1981,6 @@ updateRosterCell(dateStr, shift, name) {
       if (candidates.length > 0) {
         const assigned = candidates[0];
         this.generatedRoster[dateStr].paraNight = assigned;
-        workShifts[assigned]++;
         availableSlots[assigned]--;
       }
     }
@@ -2058,7 +2006,6 @@ updateRosterCell(dateStr, shift, name) {
       if (candidates.length > 0) {
         const assigned = candidates[0];
         this.generatedRoster[dateStr].nurseNight = assigned;
-        workShifts[assigned]++;
         availableSlots[assigned]--;
       }
     }
@@ -2072,30 +2019,35 @@ updateRosterCell(dateStr, shift, name) {
   this.renderRosterSummary();
   
   // ==================== FINAL VERIFICATION ====================
-  let message = '✅ Roster Generated!\n\n';
-  message += '🎯 FINAL TOTALS (Work Shifts + Vacation):\n\n';
+  // RE-COUNT using getRosterCountsForMonth() after generation
+  const finalCounts = this.getRosterCountsForMonth();
   
+  let message = '✅ Roster Generated!\n\n🎯 FINAL TOTALS:\n\n';
+  
+  let allGood = true;
   allStaff.forEach(name => {
     const hardCap = hardCaps[name];
-    const work = workShifts[name];
-    const vacation = vacationShifts[name];
-    const total = work + vacation;
+    const finalTotal = finalCounts[name]?.total || 0;
     
     let status = '';
-    if (total > hardCap) {
-      status = '❌ OVER!';
-    } else if (total === hardCap) {
+    if (finalTotal > hardCap) {
+      status = '❌ OVER LIMIT!';
+      allGood = false;
+    } else if (finalTotal === hardCap) {
       status = '✅ AT LIMIT';
     } else {
-      status = `(${hardCap - total} remaining)`;
+      status = `(${hardCap - finalTotal} remaining)`;
     }
     
-    message += `${name}: ${work}work + ${vacation}vac = ${total}/${hardCap} ${status}\n`;
+    message += `${name}: ${finalTotal}/${hardCap} ${status}\n`;
   });
   
+  if (!allGood) {
+    message += '\n⚠️  WARNING: Some staff are OVER their limit!';
+  }
+  
   alert(message);
-  console.log('Final workShifts:', workShifts);
-  console.log('Final vacationShifts:', vacationShifts);
+  console.log('Final counts:', finalCounts);
 }
   
 loadRosterFromFirebase() {
