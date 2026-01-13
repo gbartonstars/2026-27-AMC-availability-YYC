@@ -245,6 +245,60 @@ if (exportRosterBtn) {
   });
 }
 
+// NEW FUNCTION - Add this right after the button listener
+exportRosterToCSV() {
+  const year = this.rosterDate.getFullYear();
+  const month = this.rosterDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const monthName = this.monthNames[month];
+
+  // Create CSV header
+  let csv = `STAR 1 Roster Export - ${monthName} ${year}\n`;
+  csv += `Exported: ${new Date().toLocaleString()}\n\n`;
+  csv += 'Date,Para Day,Nurse Day,Para Night,Nurse Night\n';
+
+  // Add each day's shifts
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const dateStr = d.toISOString().split('T')[0];
+    const entry = this.generatedRoster[dateStr] || {};
+
+    const paraDay = entry.paraDay || '';
+    const nurseDay = entry.nurseDay || '';
+    const paraNight = entry.paraNight || '';
+    const nurseNight = entry.nurseNight || '';
+
+    csv += `${dateStr},${paraDay},${nurseDay},${paraNight},${nurseNight}\n`;
+  }
+
+  // Add summary section
+  csv += '\n\nSummary by Staff Member\n';
+  csv += 'Name,Total Shifts,Day Shifts,Night Shifts,Weekend Shifts\n';
+
+  const counts = this.getRosterCountsForMonth();
+  const allStaffList = ["Greg Barton", "Scott McTaggart", "Graham Newton", "Stuart Grant", "Dave Allison", "Mackenzie Wardle", "Chad Hegge", "Ken King", "John Doyle", "Bob Odney", "Kris Austin", "Kellie Ann Vogelaar", "Janice Kirkham", "Flo Butler", "Jodi Scott", "Carolyn Hogan", "Michelle Sexsmith"];
+
+  allStaffList.forEach(name => {
+    const c = counts[name] || { total: 0, day: 0, night: 0, weekend: 0 };
+    csv += `${name},${c.total},${c.day},${c.night},${c.weekend}\n`;
+  });
+
+  // Create blob and download
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', `STAR1_Roster_${monthName}_${year}.csv`);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  alert(`✅ Roster exported successfully!\n\nFile: STAR1_Roster_${monthName}_${year}.csv`);
+}
+
     // NEW: schedule lock buttons (Greg only)
     const lockFirstSixBtn = document.getElementById('lockFirstSixBtn');
     const unlockFirstSixBtn = document.getElementById('unlockFirstSixBtn');
