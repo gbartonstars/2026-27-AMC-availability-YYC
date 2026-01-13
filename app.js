@@ -1843,6 +1843,7 @@ updateRosterCell(dateStr, shift, name) {
   // Staff lists
   const rnNames = ["Graham Newton", "Stuart Grant", "Kris Austin", "Kellie Ann Vogelaar", "Janice Kirkham", "Flo Butler", "Jodi Scott", "Carolyn Hogan", "Michelle Sexsmith"];
   const paraNames = ["Greg Barton", "Scott McTaggart", "Dave Allison", "Mackenzie Wardle", "Chad Hegge", "Ken King", "John Doyle", "Bob Odney"];
+  const allStaff = rnNames.concat(paraNames);
 
   // People who DON'T have vacation reduction
   const noVacationReduction = ['Dave Allison', 'Chad Hegge', 'Bob Odney', 'Kellie Ann Vogelaar'];
@@ -1850,15 +1851,29 @@ updateRosterCell(dateStr, shift, name) {
   // Initialize roster for the month
   this.generatedRoster = this.generatedRoster || {};
 
-  // Track shift counts for each person
+  // CRITICAL: Track shift counts in REAL-TIME as we assign
   const shiftCounts = {};
-  rnNames.concat(paraNames).forEach(name => {
+  allStaff.forEach(name => {
     shiftCounts[name] = 0;
   });
 
-  // Calculate adjusted targets (target - vacation) - THIS IS THE HARD CAP
+  // FIRST PASS: Count existing manual assignments
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const dateStr = d.toISOString().split('T')[0];
+    
+    if (this.generatedRoster[dateStr]) {
+      const existing = this.generatedRoster[dateStr];
+      if (existing.paraDay) shiftCounts[existing.paraDay]++;
+      if (existing.nurseDay) shiftCounts[existing.nurseDay]++;
+      if (existing.paraNight) shiftCounts[existing.paraNight]++;
+      if (existing.nurseNight) shiftCounts[existing.nurseNight]++;
+    }
+  }
+
+  // Calculate adjusted targets (target - vacation)
   const adjustedTargets = {};
-  rnNames.concat(paraNames).forEach(name => {
+  allStaff.forEach(name => {
     const target = minimumTable[name] || 0;
     const vacationDays = this.getVacationCountForMonth(name, year, month);
     
@@ -1894,126 +1909,122 @@ updateRosterCell(dateStr, shift, name) {
     return true;
   };
 
-  // Helper: Get ONLY available staff for a shift type on a given date
-  const getStrictlyAvailable = (shiftType, dateStr) => {
-    const available = [];
-    const allStaff = new Set([...rnNames, ...paraNames]);
-    
-    allStaff.forEach(name => {
-      if (isAvailableForShift(name, dateStr, shiftType)) {
-        available.push(name);
-      }
-    });
-    
-    return available;
-  };
-
-  // Generate roster day by day
+  // SECOND PASS: Generate new assignments
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
     const dateStr = d.toISOString().split('T')[0];
 
-    // Skip if already has assignments (don't overwrite manual assignments)
+    // Skip if already has all shifts assigned for this day
     if (this.generatedRoster[dateStr]) {
       const existing = this.generatedRoster[dateStr];
-      if (existing.paraDay) shiftCounts[existing.paraDay]++;
-      if (existing.nurseDay) shiftCounts[existing.nurseDay]++;
-      if (existing.paraNight) shiftCounts[existing.paraNight]++;
-      if (existing.nurseNight) shiftCounts[existing.nurseNight]++;
-      continue;
+      if (existing.paraDay && existing.nurseDay && existing.paraNight && existing.nurseNight) {
+        continue; // All shifts filled, skip this day
+      }
     }
 
-    // Initialize this day's entry
-    this.generatedRoster[dateStr] = {
-      paraDay: null,
-      nurseDay: null,
-      paraNight: null,
-      nurseNight: null
-    };
+    // Initialize this day's entry if needed
+    if (!this.generatedRoster[dateStr]) {
+      this.generatedRoster[dateStr] = {
+        paraDay: null,
+        nurseDay: null,
+        paraNight: null,
+        nurseNight: null
+      };
+    }
+
+    const entry = this.generatedRoster[dateStr];
 
     // ===== ASSIGN PARA DAY =====
-    // STRICT: Only assign if available AND under cap
-    const paraAvailDay = getStrictlyAvailable('Day', dateStr)
-      .filter(name => paraNames.includes(name) && shiftCounts[name] < adjustedTargets[name])
-      .sort((a, b) => shiftCounts[a] - shiftCounts[b]);
+    if (!entry.paraDay) {
+      // Find available paramedics who are under their cap, sorted by fewest shifts
+      const candidates = paraNames
+        .filter(name => {
+          // Must be available
+          if (!isAvailableForShift(name, dateStr, 'Day')) return false;
+          // Must be under their adjusted target
+          if (shiftCounts[name] >= adjustedTargets[name]) return false;
+          // Can't work night before
+          const prevDate = new Date(d.getTime() - 24 * 60 * 60 * 1000);
+          const prevDateStr = prevDate.toISOString().split('T')[0];
+          const prevEntry = this.generatedRoster[prevDateStr];
+          if (prevEntry && prevEntry.paraNight === name) return false;
+          return true;
+        })
+        .sort((a, b) => shiftCounts[a] - shiftCounts[b]);
 
-    for (const name of paraAvailDay) {
-      const prevDate = new Date(d.getTime() - 24 * 60 * 60 * 1000);
-      const prevDateStr = prevDate.toISOString().split('T')[0];
-      const prevEntry = this.generatedRoster[prevDateStr];
-      
-      if (!prevEntry || prevEntry.paraNight !== name) {
-        this.generatedRoster[dateStr].paraDay = name;
-        shiftCounts[name]++;
-        break;
+      if (candidates.length > 0) {
+        const assigned = candidates[0];
+        this.generatedRoster[dateStr].paraDay = assigned;
+        shiftCounts[assigned]++;
       }
     }
 
     // ===== ASSIGN NURSE DAY =====
-    // STRICT: Only assign if available AND under cap
-    const rnAvailDay = getStrictlyAvailable('Day', dateStr)
-      .filter(name => rnNames.includes(name) && shiftCounts[name] < adjustedTargets[name])
-      .sort((a, b) => shiftCounts[a] - shiftCounts[b]);
+    if (!entry.nurseDay) {
+      const candidates = rnNames
+        .filter(name => {
+          if (!isAvailableForShift(name, dateStr, 'Day')) return false;
+          if (shiftCounts[name] >= adjustedTargets[name]) return false;
+          const prevDate = new Date(d.getTime() - 24 * 60 * 60 * 1000);
+          const prevDateStr = prevDate.toISOString().split('T')[0];
+          const prevEntry = this.generatedRoster[prevDateStr];
+          if (prevEntry && prevEntry.nurseNight === name) return false;
+          return true;
+        })
+        .sort((a, b) => shiftCounts[a] - shiftCounts[b]);
 
-    for (const name of rnAvailDay) {
-      const prevDate = new Date(d.getTime() - 24 * 60 * 60 * 1000);
-      const prevDateStr = prevDate.toISOString().split('T')[0];
-      const prevEntry = this.generatedRoster[prevDateStr];
-      
-      if (!prevEntry || prevEntry.nurseNight !== name) {
-        this.generatedRoster[dateStr].nurseDay = name;
-        shiftCounts[name]++;
-        break;
+      if (candidates.length > 0) {
+        const assigned = candidates[0];
+        this.generatedRoster[dateStr].nurseDay = assigned;
+        shiftCounts[assigned]++;
       }
     }
 
     // ===== ASSIGN PARA NIGHT =====
-    // STRICT: Only assign if available, training-clear, under cap, and no day/night conflicts
-    const paraAvailNight = getStrictlyAvailable('Night', dateStr)
-      .filter(name => {
-        if (!paraNames.includes(name)) return false;
-        if (shiftCounts[name] >= adjustedTargets[name]) return false; // HARD STOP at cap
-        if (!canWorkNight(name, dateStr)) return false;
-        return true;
-      })
-      .sort((a, b) => shiftCounts[a] - shiftCounts[b]);
+    if (!entry.paraNight) {
+      const candidates = paraNames
+        .filter(name => {
+          if (!isAvailableForShift(name, dateStr, 'Night')) return false;
+          if (shiftCounts[name] >= adjustedTargets[name]) return false;
+          if (!canWorkNight(name, dateStr)) return false;
+          // Can't work day same date
+          if (entry.paraDay === name) return false;
+          // Can't work day next date
+          const nextDate = new Date(d.getTime() + 24 * 60 * 60 * 1000);
+          const nextDateStr = nextDate.toISOString().split('T')[0];
+          const nextEntry = this.generatedRoster[nextDateStr];
+          if (nextEntry && nextEntry.paraDay === name) return false;
+          return true;
+        })
+        .sort((a, b) => shiftCounts[a] - shiftCounts[b]);
 
-    for (const name of paraAvailNight) {
-      if (this.generatedRoster[dateStr].paraDay !== name) {
-        const nextDate = new Date(d.getTime() + 24 * 60 * 60 * 1000);
-        const nextDateStr = nextDate.toISOString().split('T')[0];
-        const nextEntry = this.generatedRoster[nextDateStr];
-        
-        if (!nextEntry || nextEntry.paraDay !== name) {
-          this.generatedRoster[dateStr].paraNight = name;
-          shiftCounts[name]++;
-          break;
-        }
+      if (candidates.length > 0) {
+        const assigned = candidates[0];
+        this.generatedRoster[dateStr].paraNight = assigned;
+        shiftCounts[assigned]++;
       }
     }
 
     // ===== ASSIGN NURSE NIGHT =====
-    // STRICT: Only assign if available, training-clear, under cap, and no day/night conflicts
-    const rnAvailNight = getStrictlyAvailable('Night', dateStr)
-      .filter(name => {
-        if (!rnNames.includes(name)) return false;
-        if (shiftCounts[name] >= adjustedTargets[name]) return false; // HARD STOP at cap
-        if (!canWorkNight(name, dateStr)) return false;
-        return true;
-      })
-      .sort((a, b) => shiftCounts[a] - shiftCounts[b]);
+    if (!entry.nurseNight) {
+      const candidates = rnNames
+        .filter(name => {
+          if (!isAvailableForShift(name, dateStr, 'Night')) return false;
+          if (shiftCounts[name] >= adjustedTargets[name]) return false;
+          if (!canWorkNight(name, dateStr)) return false;
+          if (entry.nurseDay === name) return false;
+          const nextDate = new Date(d.getTime() + 24 * 60 * 60 * 1000);
+          const nextDateStr = nextDate.toISOString().split('T')[0];
+          const nextEntry = this.generatedRoster[nextDateStr];
+          if (nextEntry && nextEntry.nurseDay === name) return false;
+          return true;
+        })
+        .sort((a, b) => shiftCounts[a] - shiftCounts[b]);
 
-    for (const name of rnAvailNight) {
-      if (this.generatedRoster[dateStr].nurseDay !== name) {
-        const nextDate = new Date(d.getTime() + 24 * 60 * 60 * 1000);
-        const nextDateStr = nextDate.toISOString().split('T')[0];
-        const nextEntry = this.generatedRoster[nextDateStr];
-        
-        if (!nextEntry || nextEntry.nurseDay !== name) {
-          this.generatedRoster[dateStr].nurseNight = name;
-          shiftCounts[name]++;
-          break;
-        }
+      if (candidates.length > 0) {
+        const assigned = candidates[0];
+        this.generatedRoster[dateStr].nurseNight = assigned;
+        shiftCounts[assigned]++;
       }
     }
   }
@@ -2027,10 +2038,11 @@ updateRosterCell(dateStr, shift, name) {
   
   // Show final counts
   let message = '✅ Roster generated!\n\nFinal Shift Counts:\n';
-  rnNames.concat(paraNames).forEach(name => {
+  allStaff.forEach(name => {
     const target = adjustedTargets[name];
     const actual = shiftCounts[name];
-    message += `${name}: ${actual}/${target}\n`;
+    const status = actual > target ? '❌ OVER' : actual === target ? '✅ AT TARGET' : `(${target - actual} remaining)`;
+    message += `${name}: ${actual}/${target} ${status}\n`;
   });
   alert(message);
 }
