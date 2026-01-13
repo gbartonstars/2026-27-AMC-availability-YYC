@@ -935,7 +935,6 @@ renderRosterSummary() {
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
     const dateStr = d.toISOString().split('T')[0];
-    const entry = this.allAvailability[name]?.[dateStr];
     
     allStaff.forEach(name => {
       const staffEntry = this.allAvailability[name]?.[dateStr];
@@ -959,19 +958,20 @@ renderRosterSummary() {
 
   allStaff.forEach(name => {
     const c = counts[name] || { total: 0, day: 0, night: 0, weekend: 0 };
-    let target = minimumTable[name] || 0;
+    const target = minimumTable[name] || 0;  // KEEP THIS AS ORIGINAL TARGET
     const vacation = vacationCounts[name] || 0;
     
     // EXCEPTION: Dave, Chad, Bob, Kellie Ann don't reduce target for vacation
     const noVacationReduction = ['Dave Allison', 'Chad Hegge', 'Bob Odney', 'Kellie Ann Vogelaar'];
     
-    // Reduce target by vacation days for everyone EXCEPT the exceptions
+    // Calculate ADJUSTED target for comparison (don't modify original target)
+    let adjustedTarget = target;
     if (!noVacationReduction.includes(name)) {
-      target = Math.max(0, target - vacation);
+      adjustedTarget = Math.max(0, target - vacation);
     }
     
-    const gap = Math.max(0, target - c.total);
-    const overage = Math.max(0, c.total - target);
+    const gap = Math.max(0, adjustedTarget - c.total);
+    const overage = Math.max(0, c.total - adjustedTarget);
     
     // Highlight row in LIGHT RED if deficiency, LIGHT YELLOW if overage
     let rowBg = '#f9f9f9';
@@ -989,7 +989,7 @@ renderRosterSummary() {
 
     html += `<tr style="background: ${rowBg};">`;
     html += `<td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">${name}</td>`;
-    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold;">${target}</td>`;
+    html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold;">${target}</td>`;  // ORIGINAL TARGET
     html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; color: #ff6666; font-weight: bold;">${vacation}</td>`;
     html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; color: ${gapColor}; font-weight: bold;">${c.total}${gapText}</td>`;
     html += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${c.day}</td>`;
