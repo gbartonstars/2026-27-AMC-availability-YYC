@@ -1140,7 +1140,24 @@ updateRosterCell(dateStr, shift, name) {
       this.renderRosterCalendar();
       return;
     }
+    
+// Check if override checkbox is enabled
+const overrideCheckbox = document.getElementById('overrideShiftCapCheckbox');
+const allowOverride = overrideCheckbox && overrideCheckbox.checked;
 
+// If override is enabled, skip the cap enforcement
+if (allowOverride) {
+  // Save the shift without cap checking
+  if (!this.generatedRoster[dateStr]) {
+    this.generatedRoster[dateStr] = { paraDay: null, nurseDay: null, paraNight: null, nurseNight: null };
+  }
+  this.generatedRoster[dateStr][shift] = name || null;
+  firebase.database().ref('generatedRoster').set(this.generatedRoster);
+  this.renderRosterCalendar();
+  this.renderRosterSummary();
+  return; // EXIT - don't do the normal cap checks below
+}
+  
     // CHECK: Strict shift cap enforcement - NO OVERAGES ALLOWED
     const year = new Date(dateStr).getFullYear();
     const month = new Date(dateStr).getMonth();
