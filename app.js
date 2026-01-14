@@ -1083,17 +1083,32 @@ getVacationCountForMonth(name, year, month) {
 
 // Update a roster cell with validation
 updateRosterCell(dateStr, shift, name) {
-  // Save the previous value in case we need to revert
+  // CHECK OVERRIDE FIRST - if enabled, skip ALL validations
+  const overrideCheckbox = document.getElementById('overrideShiftCapCheckbox');
+  const allowOverride = overrideCheckbox && overrideCheckbox.checked;
+
+  if (allowOverride) {
+    // Override mode - assign shift with NO checking whatsoever
+    console.log(`OVERRIDE MODE: Assigning ${name} to ${shift} on ${dateStr}`);
+    if (!this.generatedRoster[dateStr]) {
+      this.generatedRoster[dateStr] = { paraDay: null, nurseDay: null, paraNight: null, nurseNight: null };
+    }
+    this.generatedRoster[dateStr][shift] = name || null;
+    firebase.database().ref('generatedRoster').set(this.generatedRoster);
+    this.renderRosterCalendar();
+    this.renderRosterSummary();
+    return; // EXIT - all other checks bypassed
+  }
+
+  // ==================== NORMAL MODE - Full validation ====================
   const previousValue = this.generatedRoster[dateStr]?.[shift] || null;
-  
+
   // Check for training on this date
   if (name) {
-    const staffDays = this.allAvailability[name] || {};
+    const staffDays = this.allAvailability[name];
     const entry = staffDays[dateStr];
-    
     if (entry && entry.Day === "T") {
-      alert(`⚠️ WARNING: ${name} has TRAINING scheduled on this date!\n\nAre you sure you want to assign them a shift?`);
-      // Reset the select back to previous value
+      alert(`⚠️ WARNING: ${name} has TRAINING scheduled on this date!\nAre you sure you want to assign them a shift?`);
       this.renderRosterCalendar();
       return;
     }
