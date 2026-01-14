@@ -1083,26 +1083,11 @@ getVacationCountForMonth(name, year, month) {
 
 // Update a roster cell with validation
 updateRosterCell(dateStr, shift, name) {
-  // CHECK OVERRIDE FIRST - if enabled, skip ALL validations
+  // Check override checkbox (but don't skip conflicts yet)
   const overrideCheckbox = document.getElementById('overrideShiftCapCheckbox');
   const allowOverride = overrideCheckbox && overrideCheckbox.checked;
 
-  if (allowOverride) {
-    // Override mode - assign shift with NO checking whatsoever
-    console.log(`OVERRIDE MODE: Assigning ${name} to ${shift} on ${dateStr}`);
-    if (!this.generatedRoster[dateStr]) {
-      this.generatedRoster[dateStr] = { paraDay: null, nurseDay: null, paraNight: null, nurseNight: null };
-    }
-    this.generatedRoster[dateStr][shift] = name || null;
-    firebase.database().ref('generatedRoster').set(this.generatedRoster);
-    this.renderRosterCalendar();
-    this.renderRosterSummary();
-    return; // EXIT - all other checks bypassed
-  }
-
-  // ==================== NORMAL MODE - Full validation ====================
-  const previousValue = this.generatedRoster[dateStr]?.[shift] || null;
-
+  // ==================== ALWAYS CHECK CONFLICTS ====================
   // Check for training on this date
   if (name) {
     const staffDays = this.allAvailability[name];
@@ -1156,7 +1141,7 @@ updateRosterCell(dateStr, shift, name) {
       return;
     }
 
-    // NEW CHECK: Night then day THIS date - check PREVIOUS night
+    // Night then day THIS date - check PREVIOUS night
     const prevNightEntry = this.generatedRoster[prevDateStr] || {};
     const prevNightShifts = [prevNightEntry.paraNight, prevNightEntry.nurseNight];
     if ((shift === 'paraDay' || shift === 'nurseDay') && prevNightShifts.includes(name)) {
@@ -1166,7 +1151,21 @@ updateRosterCell(dateStr, shift, name) {
     }
   }
 
-  // CHECK: Strict shift cap enforcement - NO OVERAGES ALLOWED (unless override enabled)
+  // ==================== OVERRIDE ONLY SKIPS CAP CHECK ====================
+  if (allowOverride) {
+    // Override mode - skip CAP check only, but conflicts already validated above
+    console.log(`OVERRIDE MODE: Assigning ${name} to ${shift} on ${dateStr}`);
+    if (!this.generatedRoster[dateStr]) {
+      this.generatedRoster[dateStr] = { paraDay: null, nurseDay: null, paraNight: null, nurseNight: null };
+    }
+    this.generatedRoster[dateStr][shift] = name || null;
+    firebase.database().ref('generatedRoster').set(this.generatedRoster);
+    this.renderRosterCalendar();
+    this.renderRosterSummary();
+    return; // EXIT - cap check bypassed, but conflicts were validated
+  }
+
+  // CHECK: Strict shift cap enforcement - NO OVERAGES ALLOWED
   const year = new Date(dateStr).getFullYear();
   const month = new Date(dateStr).getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -1186,8 +1185,8 @@ updateRosterCell(dateStr, shift, name) {
   
   if (!isReplacing && !isReplacingOther) {
     // NEW shift assignment - check strict cap
-    if (currentShifts >= adjustedTarget && !allowOverride) {
-      // AT OR OVER target - block unless override is enabled
+    if (currentShifts >= adjustedTarget) {
+      // AT OR OVER target - NEVER allow (unless override, which we already handled above)
       alert(`❌ ${name} has REACHED their target of ${adjustedTarget} shifts (currently has ${currentShifts}).\n\n✓ Check "Override Shift Cap" to force assign.`);
       this.renderRosterCalendar();
       return;
