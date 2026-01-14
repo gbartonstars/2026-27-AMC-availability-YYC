@@ -1155,6 +1155,15 @@ updateRosterCell(dateStr, shift, name) {
       this.renderRosterCalendar();
       return;
     }
+
+    // NEW CHECK: Night then day THIS date - check PREVIOUS night
+    const prevNightEntry = this.generatedRoster[prevDateStr] || {};
+    const prevNightShifts = [prevNightEntry.paraNight, prevNightEntry.nurseNight];
+    if ((shift === 'paraDay' || shift === 'nurseDay') && prevNightShifts.includes(name)) {
+      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(prevDateStr).toDateString()}. Cannot assign DAY shift the next day.`);
+      this.renderRosterCalendar();
+      return;
+    }
   }
 
   // CHECK: Strict shift cap enforcement - NO OVERAGES ALLOWED (unless override enabled)
