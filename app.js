@@ -41,44 +41,44 @@ class StaffScheduleApp {
     };
 
     this.minimumRequired30 = {
-      "Graham Newton": 12,
-      "Stuart Grant": 12,
-      "Kris Austin": 9,
-      "Kellie Ann Vogelaar": 5,
-      "Janice Kirkham": 6,
-      "Flo Butler": 4,
-      "Jodi Scott": 4,
-      "Carolyn Hogan": 4,
-      "Michelle Sexsmith": 4,
-      "Scott McTaggart": 13,
-      "Greg Barton": 13,
-      "Dave Allison": 6,
-      "Ken King": 10,
-      "Bob Odney": 6,
-      "Chad Hegge": 6,
-      "Mackenzie Wardle": 6,
-      "John Doyle": 4 
-    };
+  "Graham Newton": 12,
+  "Stuart Grant": 12,
+  "Kris Austin": 10,
+  "Kellie Ann Vogelaar": 5,
+  "Janice Kirkham": 5,
+  "Flo Butler": 4,
+  "Jodi Scott": 4,
+  "Carolyn Hogan": 4,
+  "Michelle Sexsmith": 4,
+  "Scott McTaggart": 12,
+  "Greg Barton": 12,
+  "Dave Allison": 6,
+  "Ken King": 8,
+  "Bob Odney": 6,
+  "Chad Hegge": 6,
+  "Mackenzie Wardle": 6,
+  "John Doyle": 4
+};
 
     this.minimumRequired31 = {
-      "Graham Newton": 12,
-      "Stuart Grant": 12,
-      "Kris Austin": 9,
-      "Kellie Ann Vogelaar": 5,
-      "Janice Kirkham": 6,
-      "Flo Butler": 5,
-      "Jodi Scott": 5,
-      "Carolyn Hogan": 4,
-      "Michelle Sexsmith": 4,
-      "Scott McTaggart": 13,
-      "Greg Barton": 13,
-      "Dave Allison": 6,
-      "Ken King": 12,
-      "Bob Odney": 6,
-      "Chad Hegge": 6,
-      "Mackenzie Wardle": 6,
-      "John Doyle": 4 
-    };
+  "Graham Newton": 12,
+  "Stuart Grant": 12,
+  "Kris Austin": 10,
+  "Kellie Ann Vogelaar": 5,
+  "Janice Kirkham": 5,
+  "Flo Butler": 5,
+  "Jodi Scott": 5,
+  "Carolyn Hogan": 4,
+  "Michelle Sexsmith": 4,
+  "Scott McTaggart": 12,
+  "Greg Barton": 12,
+  "Dave Allison": 6,
+  "Ken King": 10,
+  "Bob Odney": 6,
+  "Chad Hegge": 6,
+  "Mackenzie Wardle": 6,
+  "John Doyle": 4
+};
 
     this.availabilityOptions = [
       { value: '',  label: 'Not Specified' },
@@ -123,6 +123,73 @@ class StaffScheduleApp {
     this.loadAllData();
   }
 
+  // Dynamic minimum requirements based on month and year
+getMinimumRequiredForMonth(year, month) {
+  // month is 0-11 (0=Jan, 1=Feb, etc)
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const isFebruary = month === 1;
+  const is30DayMonth = daysInMonth === 30 || isFebruary;
+
+  // Paramedics
+  const paramedics = {
+    "Greg Barton": 12,
+    "Scott McTaggart": 12,
+    "Ken King": is30DayMonth ? 8 : 10,
+    "Mackenzie Wardle": 6,
+    "Bob Odney": 6,
+    "Chad Hegge": 6,
+    "Dave Allison": 6,
+    "John Doyle": 4
+  };
+
+  // Nurses - different by month
+  let nurses = {};
+  
+  // April (month 3) and June (month 5)
+  if (month === 3 || month === 5) {
+    nurses = {
+      "Graham Newton": 13,
+      "Stuart Grant": 13,
+      "Kris Austin": 11,
+      "Kellie Ann Vogelaar": 8,
+      "Janice Kirkham": 7,
+      "Flo Butler": 0,
+      "Jodi Scott": 0,
+      "Carolyn Hogan": 4,
+      "Michelle Sexsmith": 4
+    };
+  }
+  // May (month 4)
+  else if (month === 4) {
+    nurses = {
+      "Graham Newton": 13,
+      "Stuart Grant": 13,
+      "Kris Austin": 12,
+      "Kellie Ann Vogelaar": 8,
+      "Janice Kirkham": 8,
+      "Flo Butler": 0,
+      "Jodi Scott": 0,
+      "Carolyn Hogan": 4,
+      "Michelle Sexsmith": 4
+    };
+  }
+  // July onwards (months 6+)
+  else {
+    nurses = {
+      "Graham Newton": 12,
+      "Stuart Grant": 12,
+      "Kris Austin": is30DayMonth ? 10 : 10,
+      "Kellie Ann Vogelaar": 5,
+      "Janice Kirkham": 5,
+      "Flo Butler": is30DayMonth ? 4 : 5,
+      "Jodi Scott": is30DayMonth ? 4 : 5,
+      "Carolyn Hogan": 4,
+      "Michelle Sexsmith": 4
+    };
+  }
+
+  return { ...paramedics, ...nurses };
+}
   // Save everything to Firebase (overwrite current data)
  saveAllData() {
   const payload = {
@@ -899,7 +966,7 @@ getRosterCountsForMonth() {
   const month = this.rosterDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const minimumTable = daysInMonth === 31 ? this.minimumRequired31 : this.minimumRequired30;
+  const minimumTable = this.getMinimumRequiredForMonth(year, month);
   const caps = {};
   Object.keys(minimumTable).forEach(name => {
     caps[name] = { cap: minimumTable[name] };
@@ -916,7 +983,7 @@ renderRosterSummary() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   
   const counts = this.getRosterCountsForMonth();
-  const minimumTable = daysInMonth === 31 ? this.minimumRequired31 : this.minimumRequired30;
+  const minimumTable = this.getMinimumRequiredForMonth(year, month);
   
   // Count vacation days for each person THIS MONTH
   const vacationCounts = {};
@@ -1078,7 +1145,7 @@ updateRosterCell(dateStr, shift, name) {
     const year = new Date(dateStr).getFullYear();
     const month = new Date(dateStr).getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const minimumTable = daysInMonth === 31 ? this.minimumRequired31 : this.minimumRequired30;
+    const minimumTable = this.getMinimumRequiredForMonth(year, month);
     const counts = this.getRosterCountsForMonth();
     
     const vacation = this.getVacationCountForMonth(name, year, month);
@@ -1838,7 +1905,7 @@ updateRosterCell(dateStr, shift, name) {
   const year = this.rosterDate.getFullYear();
   const month = this.rosterDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const minimumTable = daysInMonth === 31 ? this.minimumRequired31 : this.minimumRequired30;
+  const minimumTable = this.getMinimumRequiredForMonth(year, month);
 
   const rnNames = ["Graham Newton", "Stuart Grant", "Kris Austin", "Kellie Ann Vogelaar", "Janice Kirkham", "Flo Butler", "Jodi Scott", "Carolyn Hogan", "Michelle Sexsmith"];
   const paraNames = ["Greg Barton", "Scott McTaggart", "Dave Allison", "Mackenzie Wardle", "Chad Hegge", "Ken King", "John Doyle", "Bob Odney"];
