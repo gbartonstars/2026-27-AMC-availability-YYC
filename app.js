@@ -179,73 +179,83 @@ loadAllData() {
 }
 
   bindEvents() {
-    document.getElementById('staffSelect')
-      .addEventListener('change', e => this.onStaffChange(e));
+  document.getElementById('staffSelect')
+    .addEventListener('change', e => this.onStaffChange(e));
 
-    document.getElementById('viewStaffSelect')
-      .addEventListener('change', e => this.onViewStaffChange(e));
+  document.getElementById('viewStaffSelect')
+    .addEventListener('change', e => this.onViewStaffChange(e));
 
-    document.getElementById('prevMonth')
-      .addEventListener('click', () => this.changeMonth(-1));
+  document.getElementById('prevMonth')
+    .addEventListener('click', () => this.changeMonth(-1));
 
-    document.getElementById('nextMonth')
-      .addEventListener('click', () => this.changeMonth(1));
+  document.getElementById('nextMonth')
+    .addEventListener('click', () => this.changeMonth(1));
 
-    const overviewToggle = document.getElementById('overviewToggle');
-    if (overviewToggle) {
-      overviewToggle.addEventListener('change', e => {
-        this.isOverviewMode = e.target.checked;
-        this.showSchedule();
-      });
-    }
+  const overviewToggle = document.getElementById('overviewToggle');
+  if (overviewToggle) {
+    overviewToggle.addEventListener('change', e => {
+      this.isOverviewMode = e.target.checked;
+      this.showSchedule();
+    });
+  }
 
-    const idealTab = document.getElementById('idealScheduleTab');
-    if (idealTab) {
-      idealTab.addEventListener('click', () => this.showIdealSchedule());
-    }
+  const idealTab = document.getElementById('idealScheduleTab');
+  if (idealTab) {
+    idealTab.addEventListener('click', () => this.showIdealSchedule());
+  }
 
-    const idealPrev = document.getElementById('idealPrevMonth');
-    const idealNext = document.getElementById('idealNextMonth');
-    if (idealPrev && idealNext) {
-      idealPrev.addEventListener('click', () => this.changeIdealMonth(-1));
-      idealNext.addEventListener('click', () => this.changeIdealMonth(1));
-    }
+  const idealPrev = document.getElementById('idealPrevMonth');
+  const idealNext = document.getElementById('idealNextMonth');
+  if (idealPrev && idealNext) {
+    idealPrev.addEventListener('click', () => this.changeIdealMonth(-1));
+    idealNext.addEventListener('click', () => this.changeIdealMonth(1));
+  }
 
-    const backBtn = document.getElementById('backToMainSchedule');
-    if (backBtn) {
-      backBtn.addEventListener('click', () => this.showSchedule());
-    }
+  const backBtn = document.getElementById('backToMainSchedule');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => this.showSchedule());
+  }
 
-    // Auto roster buttons and navigation
-    const openRosterBtn = document.getElementById('openRosterView');
-    const generateRosterBtn = document.getElementById('generateRosterButton');
-    const rosterPrev = document.getElementById('rosterPrevMonth');
-    const rosterNext = document.getElementById('rosterNextMonth');
+  // Auto roster buttons and navigation
+  const openRosterBtn = document.getElementById('openRosterView');
+  const generateRosterBtn = document.getElementById('generateRosterButton');
+  const rosterPrev = document.getElementById('rosterPrevMonth');
+  const rosterNext = document.getElementById('rosterNextMonth');
 
-    if (openRosterBtn) {
-      openRosterBtn.addEventListener('click', () => this.showAutoRoster());
-    }
-    if (generateRosterBtn) {
-      generateRosterBtn.addEventListener('click', () => this.onGenerateRoster());
-    }
-    if (rosterPrev && rosterNext) {
-      rosterPrev.addEventListener('click', () => this.changeRosterMonth(-1));
-      rosterNext.addEventListener('click', () => this.changeRosterMonth(1));
-    }
+  if (openRosterBtn) {
+    openRosterBtn.addEventListener('click', () => this.showAutoRoster());
+  }
+  if (generateRosterBtn) {
+    generateRosterBtn.addEventListener('click', () => this.onGenerateRoster());
+  }
+  if (rosterPrev && rosterNext) {
+    rosterPrev.addEventListener('click', () => this.changeRosterMonth(-1));
+    rosterNext.addEventListener('click', () => this.changeRosterMonth(1));
+  }
 
-    // Export roster to CSV button
-const exportRosterBtn = document.getElementById('exportRosterBtn');
-if (exportRosterBtn) {
-  exportRosterBtn.addEventListener('click', () => {
-    if (this.currentStaff !== "Greg Barton") {
-      alert("Only Greg can export the roster.");
-      return;
-    }
-    this.exportRosterToCSV();
-  });
-}
+  // Export roster to CSV button
+  const exportRosterBtn = document.getElementById('exportRosterBtn');
+  if (exportRosterBtn) {
+    exportRosterBtn.addEventListener('click', () => {
+      if (this.currentStaff !== "Greg Barton") {
+        alert("Only Greg can export the roster.");
+        return;
+      }
+      this.exportRosterToCSV();
+    });
+  }
 
-// NEW FUNCTION - Add this right after the button listener
+  // NEW: schedule lock buttons (Greg only)
+  const lockFirstSixBtn = document.getElementById('lockFirstSixBtn');
+  const unlockFirstSixBtn = document.getElementById('unlockFirstSixBtn');
+  const lockLastSixBtn = document.getElementById('lockLastSixBtn');
+  const unlockLastSixBtn = document.getElementById('unlockLastSixBtn');
+  
+  // ... rest of bindEvents code ...
+} // ← CLOSE bindEvents() here
+
+
+// ← START NEW METHOD HERE (OUTSIDE bindEvents)
 exportRosterToCSV() {
   const year = this.rosterDate.getFullYear();
   const month = this.rosterDate.getMonth();
