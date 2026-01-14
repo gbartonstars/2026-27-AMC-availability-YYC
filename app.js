@@ -1155,50 +1155,33 @@ updateRosterCell(dateStr, shift, name) {
       this.renderRosterCalendar();
       return;
     }
-    
-// Check if override checkbox is enabled
-const overrideCheckbox = document.getElementById('overrideShiftCapCheckbox');
-const allowOverride = overrideCheckbox && overrideCheckbox.checked;
-
-// If override is enabled, skip the cap enforcement
-if (allowOverride) {
-  // Save the shift without cap checking
-  if (!this.generatedRoster[dateStr]) {
-    this.generatedRoster[dateStr] = { paraDay: null, nurseDay: null, paraNight: null, nurseNight: null };
   }
-  this.generatedRoster[dateStr][shift] = name || null;
-  firebase.database().ref('generatedRoster').set(this.generatedRoster);
-  this.renderRosterCalendar();
-  this.renderRosterSummary();
-  return; // EXIT - don't do the normal cap checks below
-}
+
+  // CHECK: Strict shift cap enforcement - NO OVERAGES ALLOWED (unless override enabled)
+  const year = new Date(dateStr).getFullYear();
+  const month = new Date(dateStr).getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const minimumTable = this.getMinimumRequiredForMonth(year, month);
+  const counts = this.getRosterCountsForMonth();
   
-    // CHECK: Strict shift cap enforcement - NO OVERAGES ALLOWED
-    const year = new Date(dateStr).getFullYear();
-    const month = new Date(dateStr).getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const minimumTable = this.getMinimumRequiredForMonth(year, month);
-    const counts = this.getRosterCountsForMonth();
-    
-    const vacation = this.getVacationCountForMonth(name, year, month);
-    const target = minimumTable[name] || 0;
-    const noVacationReduction = ['Dave Allison', 'Chad Hegge', 'Bob Odney', 'Kellie Ann Vogelaar'];
-    const adjustedTarget = noVacationReduction.includes(name) ? target : Math.max(0, target - vacation);
-    
-    const currentShifts = counts[name]?.total || 0;
-    
-    // If they already have a shift on this date in THIS field, we're replacing it (no increase)
-    const isReplacing = this.generatedRoster[dateStr] && this.generatedRoster[dateStr][shift] === name;
-    const isReplacingOther = this.generatedRoster[dateStr]?.[shift] && this.generatedRoster[dateStr][shift] !== name;
-    
-    if (!isReplacing && !isReplacingOther) {
-      // NEW shift assignment - check strict cap
-      if (currentShifts >= adjustedTarget) {
-        // AT OR OVER target - NEVER allow
-        alert(`❌ ${name} has REACHED their target of ${adjustedTarget} shifts (currently has ${currentShifts}).\n\nNO MORE SHIFTS CAN BE ASSIGNED.`);
-        this.renderRosterCalendar();
-        return;
-      }
+  const vacation = this.getVacationCountForMonth(name, year, month);
+  const target = minimumTable[name] || 0;
+  const noVacationReduction = ['Dave Allison', 'Chad Hegge', 'Bob Odney', 'Kellie Ann Vogelaar'];
+  const adjustedTarget = noVacationReduction.includes(name) ? target : Math.max(0, target - vacation);
+  
+  const currentShifts = counts[name]?.total || 0;
+  
+  // If they already have a shift on this date in THIS field, we're replacing it (no increase)
+  const isReplacing = this.generatedRoster[dateStr] && this.generatedRoster[dateStr][shift] === name;
+  const isReplacingOther = this.generatedRoster[dateStr]?.[shift] && this.generatedRoster[dateStr][shift] !== name;
+  
+  if (!isReplacing && !isReplacingOther) {
+    // NEW shift assignment - check strict cap
+    if (currentShifts >= adjustedTarget && !allowOverride) {
+      // AT OR OVER target - block unless override is enabled
+      alert(`❌ ${name} has REACHED their target of ${adjustedTarget} shifts (currently has ${currentShifts}).\n\n✓ Check "Override Shift Cap" to force assign.`);
+      this.renderRosterCalendar();
+      return;
     }
   }
 
