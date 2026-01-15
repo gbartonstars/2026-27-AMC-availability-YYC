@@ -2211,6 +2211,119 @@ updateRosterCell(dateStr, shift, name) {
   console.log(`Fill rate: ${fillRate}%`);
   console.log(`Unfilled shifts: ${totalShiftsNeeded - totalShiftsFilled}`);
 
+// ==================== JANICE BLOCK GROUPING (SPECIAL CASE) ====================
+  console.log('\n=== JANICE SPECIAL BLOCK GROUPING ===');
+  const janiceName = 'Janice Kirkham';
+  const janiceTarget = minimumTable[janiceName] || 0;
+
+  // STEP 1: Collect all of Janice's currently assigned shifts
+  console.log(`Collecting ${janiceName}'s ${janiceTarget} shifts for block grouping...`);
+  const janiceShifts = [];
+  const janiceShiftTypes = ['paraDay', 'paraDay', 'nurseDay', 'nurseDay', 'paraNight', 'paraNight', 'nurseNight', 'nurseNight'];
+  
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const dateStr = d.toISOString().split('T')[0];
+    const entry = monthRoster[dateStr];
+
+    if (entry.paraDay === janiceName) {
+      janiceShifts.push({ dateStr, day, shiftType: 'paraDay' });
+      entry.paraDay = null;
+    }
+    if (entry.nurseDay === janiceName) {
+      janiceShifts.push({ dateStr, day, shiftType: 'nurseDay' });
+      entry.nurseDay = null;
+    }
+    if (entry.paraNight === janiceName) {
+      janiceShifts.push({ dateStr, day, shiftType: 'paraNight' });
+      entry.paraNight = null;
+    }
+    if (entry.nurseNight === janiceName) {
+      janiceShifts.push({ dateStr, day, shiftType: 'nurseNight' });
+      entry.nurseNight = null;
+    }
+  }
+
+  console.log(`Found ${janiceShifts.length} shifts for ${janiceName}. Target: ${janiceTarget}`);
+
+  if (janiceShifts.length > 0) {
+    // STEP 2: Calculate block structure
+    const numBlocks = 2;
+    const shiftsPerBlock = Math.ceil(janiceTarget / numBlocks);
+    const blockGap = Math.floor(daysInMonth / (numBlocks + 1)); // Gap between blocks
+    
+    console.log(`Organizing into ${numBlocks} blocks of ~${shiftsPerBlock} shifts each`);
+    console.log(`Block gap: ${blockGap} days`);
+
+    // STEP 3: Define block boundaries
+    const blocks = [];
+    for (let b = 0; b < numBlocks; b++) {
+      const blockStart = (b * blockGap) + 1;
+      const blockEnd = Math.min(blockStart + blockGap - 2, daysInMonth);
+      blocks.push({ blockNum: b + 1, start: blockStart, end: blockEnd, assigned: 0 });
+    }
+
+    console.log('Block boundaries:', blocks.map(b => `Block ${b.blockNum}: Days ${b.start}-${b.end}`).join(' | '));
+
+    // STEP 4: Assign shifts to blocks
+    let shiftIndex = 0;
+    blocks.forEach(block => {
+      console.log(`\n  Block ${block.blockNum} (Days ${block.start}-${block.end}):`);
+      
+      for (let day = block.start; day <= block.end && shiftIndex < janiceShifts.length; day++) {
+        const d = new Date(year, month, day);
+        const dateStr = d.toISOString().split('T')[0];
+        const entry = monthRoster[dateStr];
+        const jShift = janiceShifts[shiftIndex];
+
+        // Check if Janice is available for this shift type on this date
+        const staffDays = this.allAvailability[janiceName] || {};
+        const availEntry = staffDays[dateStr] || {};
+        const shiftTypeKey = jShift.shiftType.includes('Night') ? 'Night' : 'Day';
+        const isAvailable = availEntry[shiftTypeKey] === "A";
+
+        if (isAvailable) {
+          // Assign the shift
+          entry[jShift.shiftType] = janiceName;
+          block.assigned++;
+          shiftIndex++;
+          console.log(`    ✓ Day ${day} (${dateStr}): ${jShift.shiftType}`);
+        } else {
+          console.log(`    ✗ Day ${day} (${dateStr}): ${jShift.shiftType} - NOT AVAILABLE`);
+        }
+      }
+    });
+
+    // STEP 5: Handle any remaining shifts that didn't fit in blocks
+    if (shiftIndex < janiceShifts.length) {
+      console.log(`\n  Handling ${janiceShifts.length - shiftIndex} remaining shifts...`);
+      
+      for (let day = 1; day <= daysInMonth && shiftIndex < janiceShifts.length; day++) {
+        const d = new Date(year, month, day);
+        const dateStr = d.toISOString().split('T')[0];
+        const entry = monthRoster[dateStr];
+        const jShift = janiceShifts[shiftIndex];
+
+        // Check availability
+        const staffDays = this.allAvailability[janiceName] || {};
+        const availEntry = staffDays[dateStr] || {};
+        const shiftTypeKey = jShift.shiftType.includes('Night') ? 'Night' : 'Day';
+        const isAvailable = availEntry[shiftTypeKey] === "A";
+
+        if (isAvailable && !entry[jShift.shiftType]) {
+          entry[jShift.shiftType] = janiceName;
+          shiftIndex++;
+          console.log(`    ✓ Fill day ${day}: ${jShift.shiftType}`);
+        }
+      }
+    }
+
+    const totalAssigned = blocks.reduce((sum, b) => sum + b.assigned, 0) + (shiftIndex - blocks.reduce((sum, b) => sum + b.assigned, 0));
+    console.log(`\n${janiceName} block grouping complete: ${totalAssigned}/${janiceTarget} shifts assigned`);
+  }
+
+  // ==================== END JANICE BLOCK GROUPING ====================
+    
   // ==================== STEP 5: SAVE TO FIREBASE ====================
   console.log('\n=== STEP 5: Saving to Firebase ===');
   const fullRoster = this.generatedRoster || {};
