@@ -1962,12 +1962,20 @@ updateRosterCell(dateStr, shift, name) {
   console.log('Vacation days by person:', vacationDays);
 
   // ==================== STEP 2: CALCULATE HARD CAP ====================
-  console.log('\n=== STEP 2: Calculate hard caps (target - vacation) ===');
+  console.log('\n=== STEP 2: Calculate hard caps (target - vacation, with exemptions) ===');
   const hardCap = {};
+  const noVacationReduction = ["Dave Allison", "Chad Hegge", "Bob Odney", "Kellie Ann Vogelaar"];
+  
   allStaff.forEach(name => {
     const target = minimumTable[name] || 0;
     const vacation = vacationDays[name];
-    hardCap[name] = Math.max(0, target - vacation);
+    
+    // For exempt staff, vacation does NOT reduce their hard cap
+    if (noVacationReduction.includes(name)) {
+      hardCap[name] = target;  // No reduction for exempt staff
+    } else {
+      hardCap[name] = Math.max(0, target - vacation);  // Normal reduction for others
+    }
   });
   console.log('Hard caps:', hardCap);
 
