@@ -2219,7 +2219,6 @@ updateRosterCell(dateStr, shift, name) {
   // STEP 1: Collect all of Janice's currently assigned shifts
   console.log(`Collecting ${janiceName}'s ${janiceTarget} shifts for block grouping...`);
   const janiceShifts = [];
-  const janiceShiftTypes = ['paraDay', 'paraDay', 'nurseDay', 'nurseDay', 'paraNight', 'paraNight', 'nurseNight', 'nurseNight'];
   
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
@@ -2247,25 +2246,107 @@ updateRosterCell(dateStr, shift, name) {
   console.log(`Found ${janiceShifts.length} shifts for ${janiceName}. Target: ${janiceTarget}`);
 
   if (janiceShifts.length > 0) {
-    // STEP 2: Calculate block structure
-    const numBlocks = 2;
-    const shiftsPerBlock = Math.ceil(janiceTarget / numBlocks);
-    const blockGap = Math.floor(daysInMonth / (numBlocks + 1)); // Gap between blocks
-    
-    console.log(`Organizing into ${numBlocks} blocks of ~${shiftsPerBlock} shifts each`);
-    console.log(`Block gap: ${blockGap} days`);
+    // Helper functions for overlap checking
+    const hasTrainingOnDate = (dateStr) => {
+      const staffDays = this.allAvailability[janiceName] || {};
+      const entry = staffDays[dateStr] || {};
+      return entry.Day === "T";
+    };
 
-    // STEP 3: Define block boundaries
+    const canWorkNightOnDate = (dateStr) => {
+      const d = new Date(dateStr);
+      const prevDate = new Date(d.getTime() - 24 * 60 * 60 * 1000);
+      const prevDateStr = prevDate.toISOString().split('T')[0];
+      if (hasTrainingOnDate(dateStr)) return false;
+      if (hasTrainingOnDate(prevDateStr)) return false;
+      return true;
+    };
+
+    const hasConflict = (dateStr, shiftType) => {
+      const entry = monthRoster[dateStr];
+      const d = new Date(dateStr);
+      
+      if (shiftType.includes('Night')) {
+        // Night shift: can't work night if training or prev day has training
+        if (!canWorkNightOnDate(dateStr)) return true;
+        // Can't work night if already on day shift that day
+        if (entry.paraDay === janiceName || entry.nurseDay === janiceName) return true;
+        // Can't work night if already assigned to day next morning
+        const nextDate = new Date(d.getTime() + 24 * 60 * 60 * 1000);
+        const nextDateStr = nextDate.toISOString().split('T')[0];
+        const nextEntry = monthRoster[nextDateStr];
+        if (nextEntry && (nextEntry.paraDay === janiceName || nextEntry.nurseDay === janiceName)) {
+          return true;
+        }
+      } else {
+        // Day shift: can't work day if already on night shift that night
+        if (entry.paraNight === janiceName || entry.nurseNight === janiceName) return true;
+        // Can't work day if already assigned to night last night
+        const prevDate = new Date(d.getTime() - 24 * 60 * 60 * 1000);
+        const prevDateStr = prevDate.toISOString().split('T')[0];
+        const prevEntry = monthRoster[prevDateStr];
+        if (prevEntry && (prevEntry.paraNight === janiceName || prevEntry.nurseNight === janiceName)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // STEP 2: Try to fit all shifts in ONE BLOCK first
+    console.log(`\nAttempting 1-block strategy...`);
+    let blockStrategy = 1;
+    let oneBlockStart = 1;
+    let oneBlockEnd = daysInMonth;
+    let oneBlockFits = true;
+
+    // Count consecutive available days from start of month
+    let consecutiveAvailable = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      const dateStr = d.toISOString().split('T')[0];
+      const staffDays = this.allAvailability[janiceName] || {};
+      const availEntry = staffDays[dateStr] || {};
+      
+      // Check if available for either day or night
+      if (availEntry.Day === "A" || availEntry.Night === "A") {
+        consecutiveAvailable++;
+      } else {
+        if (consecutiveAvailable >= janiceTarget) {
+          oneBlockEnd = day - 1;
+          break;
+        }
+        consecutiveAvailable = 0;
+      }
+    }
+
+    if (consecutiveAvailable < janiceTarget) {
+      console.log(`  ✗ Cannot fit all ${janiceTarget} shifts in 1 consecutive block`);
+      blockStrategy = 2;
+    } else {
+      console.log(`  ✓ Found ${consecutiveAvailable} consecutive available days - using 1-block strategy`);
+      oneBlockEnd = oneBlockStart + consecutiveAvailable - 1;
+    }
+
+    // STEP 3: Define blocks based on strategy
     const blocks = [];
-    for (let b = 0; b < numBlocks; b++) {
-      const blockStart = (b * blockGap) + 1;
-      const blockEnd = Math.min(blockStart + blockGap - 2, daysInMonth);
-      blocks.push({ blockNum: b + 1, start: blockStart, end: blockEnd, assigned: 0 });
+    if (blockStrategy === 1) {
+      console.log(`\nBlock Strategy: 1 BLOCK`);
+      blocks.push({ blockNum: 1, start: oneBlockStart, end: oneBlockEnd, assigned: 0 });
+    } else {
+      console.log(`\nBlock Strategy: 2 BLOCKS`);
+      const numBlocks = 2;
+      const blockGap = Math.floor(daysInMonth / (numBlocks + 1));
+      
+      for (let b = 0; b < numBlocks; b++) {
+        const blockStart = (b * blockGap) + 1;
+        const blockEnd = Math.min(blockStart + blockGap - 2, daysInMonth);
+        blocks.push({ blockNum: b + 1, start: blockStart, end: blockEnd, assigned: 0 });
+      }
     }
 
     console.log('Block boundaries:', blocks.map(b => `Block ${b.blockNum}: Days ${b.start}-${b.end}`).join(' | '));
 
-    // STEP 4: Assign shifts to blocks
+    // STEP 4: Assign shifts to blocks WITH CONFLICT CHECKING
     let shiftIndex = 0;
     blocks.forEach(block => {
       console.log(`\n  Block ${block.blockNum} (Days ${block.start}-${block.end}):`);
@@ -2282,21 +2363,28 @@ updateRosterCell(dateStr, shift, name) {
         const shiftTypeKey = jShift.shiftType.includes('Night') ? 'Night' : 'Day';
         const isAvailable = availEntry[shiftTypeKey] === "A";
 
-        if (isAvailable) {
+        // Check for conflicts (day/night overlap issues)
+        const hasOverlapConflict = hasConflict(dateStr, jShift.shiftType);
+
+        if (isAvailable && !hasOverlapConflict && !entry[jShift.shiftType]) {
           // Assign the shift
           entry[jShift.shiftType] = janiceName;
           block.assigned++;
           shiftIndex++;
           console.log(`    ✓ Day ${day} (${dateStr}): ${jShift.shiftType}`);
         } else {
-          console.log(`    ✗ Day ${day} (${dateStr}): ${jShift.shiftType} - NOT AVAILABLE`);
+          let reason = '';
+          if (!isAvailable) reason = 'NOT AVAILABLE';
+          if (hasOverlapConflict) reason = reason ? reason + ' + OVERLAP CONFLICT' : 'OVERLAP CONFLICT';
+          if (entry[jShift.shiftType]) reason = reason ? reason + ' + SLOT OCCUPIED' : 'SLOT OCCUPIED';
+          console.log(`    ✗ Day ${day} (${dateStr}): ${jShift.shiftType} - ${reason}`);
         }
       }
     });
 
     // STEP 5: Handle any remaining shifts that didn't fit in blocks
     if (shiftIndex < janiceShifts.length) {
-      console.log(`\n  Handling ${janiceShifts.length - shiftIndex} remaining shifts...`);
+      console.log(`\n  Handling ${janiceShifts.length - shiftIndex} remaining shifts (fill anywhere available)...`);
       
       for (let day = 1; day <= daysInMonth && shiftIndex < janiceShifts.length; day++) {
         const d = new Date(year, month, day);
@@ -2310,7 +2398,10 @@ updateRosterCell(dateStr, shift, name) {
         const shiftTypeKey = jShift.shiftType.includes('Night') ? 'Night' : 'Day';
         const isAvailable = availEntry[shiftTypeKey] === "A";
 
-        if (isAvailable && !entry[jShift.shiftType]) {
+        // Check for conflicts
+        const hasOverlapConflict = hasConflict(dateStr, jShift.shiftType);
+
+        if (isAvailable && !hasOverlapConflict && !entry[jShift.shiftType]) {
           entry[jShift.shiftType] = janiceName;
           shiftIndex++;
           console.log(`    ✓ Fill day ${day}: ${jShift.shiftType}`);
@@ -2319,7 +2410,7 @@ updateRosterCell(dateStr, shift, name) {
     }
 
     const totalAssigned = blocks.reduce((sum, b) => sum + b.assigned, 0) + (shiftIndex - blocks.reduce((sum, b) => sum + b.assigned, 0));
-    console.log(`\n${janiceName} block grouping complete: ${totalAssigned}/${janiceTarget} shifts assigned`);
+    console.log(`\n${janiceName} block grouping complete: ${totalAssigned}/${janiceTarget} shifts assigned (${blockStrategy} block strategy)`);
   }
 
   // ==================== END JANICE BLOCK GROUPING ====================
