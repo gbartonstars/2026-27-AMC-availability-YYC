@@ -1234,6 +1234,27 @@ if ((shift === 'paraDay' || shift === 'nurseDay') && sameDayNightShifts.includes
   this.renderRosterSummary();
 }
 
+ // ==================== ADD NEW FUNCTION HERE ====================
+cleanupRosterDate(dateStr) {
+  console.log(`🧹 Cleaning up ${dateStr}...`);
+  
+  firebase.database().ref(`generatedRoster/${dateStr}`).once('value', snapshot => {
+    const dayData = snapshot.val() || {};
+    
+    // Remove any null or undefined values
+    const cleaned = {
+      paraDay: dayData.paraDay || null,
+      paraNight: dayData.paraNight || null,
+      nurseDay: dayData.nurseDay || null,
+      nurseNight: dayData.nurseNight || null
+    };
+    
+    firebase.database().ref(`generatedRoster/${dateStr}`).set(cleaned);
+    console.log(`✓ ${dateStr} cleaned:`, cleaned);
+  });
+}
+// ==================== END NEW FUNCTION ==================== 
+
   // ==================== DEBUG: Force Firebase Refresh ====================
 debugRefreshRosterData() {
   console.log('🔄 FORCE REFRESHING ROSTER DATA FROM FIREBASE...');
