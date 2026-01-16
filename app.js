@@ -1149,13 +1149,14 @@ updateRosterCell(dateStr, shift, name) {
     }
 
     // PREVIOUS date conflict: Can't work day if previous night has them on night shift
-    const prevNightEntry = this.generatedRoster[prevDateStr] || {};
-    const prevNightShifts = [prevNightEntry.paraNight, prevNightEntry.nurseNight];
-    if ((shift === 'paraDay' || shift === 'nurseDay') && prevNightShifts.includes(name)) {
-      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(prevDateStr).toDateString()}. Cannot assign DAY shift after a night shift.`);
-      this.renderRosterCalendar();
-      return;
-    }
+const prevNightEntry = this.generatedRoster[prevDateStr] || {};
+const prevNightShifts = [prevNightEntry.paraNight, prevNightEntry.nurseNight];
+console.log(`DEBUG ${name} on ${dateStr}: prevNightShifts = ${prevNightShifts.join(', ')}`);
+if ((shift === 'paraDay' || shift === 'nurseDay') && prevNightShifts.includes(name)) {
+  alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(prevDateStr).toDateString()}. Cannot assign DAY shift after a night shift.\n\nDEBUG: prevNightShifts = ${prevNightShifts.join(', ')}`);
+  this.renderRosterCalendar();
+  return;
+}
 
     // PREVIOUS date conflict: Can't work night if previous day has them on day shift
     const prevDayEntry = this.generatedRoster[prevDateStr] || {};
@@ -1223,6 +1224,17 @@ updateRosterCell(dateStr, shift, name) {
   firebase.database().ref('generatedRoster').set(this.generatedRoster);
   this.renderRosterCalendar();
   this.renderRosterSummary();
+}
+
+  // ==================== DEBUG: Force Firebase Refresh ====================
+debugRefreshRosterData() {
+  console.log('🔄 FORCE REFRESHING ROSTER DATA FROM FIREBASE...');
+  firebase.database().ref('generatedRoster').once('value', snapshot => {
+    this.generatedRoster = snapshot.val() || {};
+    console.log('✓ Roster data refreshed:', this.generatedRoster);
+    this.renderRosterCalendar();
+    this.renderRosterSummary();
+  });
 }
   
   renderCalendar() {
