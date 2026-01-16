@@ -1106,7 +1106,7 @@ updateRosterCell(dateStr, shift, name) {
     }
   }
 
-  // Check for day/night conflict (person can't work day and night same date, or night then day next date, or day then night next date)
+  // Check for day/night conflict
   if (name) {
     const date = new Date(dateStr);
     const prevDate = new Date(date.getTime() - 24 * 60 * 60 * 1000);
@@ -1114,55 +1114,27 @@ updateRosterCell(dateStr, shift, name) {
     const prevDateStr = prevDate.toISOString().split('T')[0];
     const nextDateStr = nextDate.toISOString().split('T')[0];
 
-    // Get ALL shifts for all three dates
+    // Get shifts for all three dates
     const sameDay = this.generatedRoster[dateStr] || {};
     const prevDayEntry = this.generatedRoster[prevDateStr] || {};
     const nextDayEntry = this.generatedRoster[nextDateStr] || {};
 
-    // SAME DATE: can't do both day and night
-    const sameDayShifts = [sameDay.paraDay, sameDay.nurseDay, sameDay.paraNight, sameDay.nurseNight];
-    if (shift === 'paraDay' || shift === 'nurseDay') {
-      // Assigning to DAY - check if they're on NIGHT today
-      if (sameDay.paraNight === name || sameDay.nurseNight === name) {
-        alert(`❌ ${name} is already scheduled for a NIGHT shift on this date. Cannot assign DAY shift.`);
-        this.renderRosterCalendar();
-        return;
-      }
+    // Rule 1: SAME DATE - can't do both day and night on same date
+    if ((shift === 'paraDay' || shift === 'nurseDay') && (sameDay.paraNight === name || sameDay.nurseNight === name)) {
+      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${dateStr}. Cannot work both DAY and NIGHT on the same date.`);
+      this.renderRosterCalendar();
+      return;
     }
     
-    if (shift === 'paraNight' || shift === 'nurseNight') {
-      // Assigning to NIGHT - check if they're on DAY today
-      if (sameDay.paraDay === name || sameDay.nurseDay === name) {
-        alert(`❌ ${name} is already scheduled for a DAY shift on this date. Cannot assign NIGHT shift.`);
-        this.renderRosterCalendar();
-        return;
-      }
+    if ((shift === 'paraNight' || shift === 'nurseNight') && (sameDay.paraDay === name || sameDay.nurseDay === name)) {
+      alert(`❌ ${name} is already scheduled for a DAY shift on ${dateStr}. Cannot work both NIGHT and DAY on the same date.`);
+      this.renderRosterCalendar();
+      return;
     }
 
-    // PREVIOUS DATE: can't work day if they worked NIGHT yesterday
+    // Rule 2: PREVIOUS NIGHT → TODAY DAY not allowed (need rest after night)
     if ((shift === 'paraDay' || shift === 'nurseDay') && (prevDayEntry.paraNight === name || prevDayEntry.nurseNight === name)) {
-      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(prevDateStr).toDateString()}. Cannot assign DAY shift after a night shift.`);
-      this.renderRosterCalendar();
-      return;
-    }
-
-    // PREVIOUS DATE: can't work night if they worked DAY yesterday
-    if ((shift === 'paraNight' || shift === 'nurseNight') && (prevDayEntry.paraDay === name || prevDayEntry.nurseDay === name)) {
-      alert(`❌ ${name} is already scheduled for a DAY shift on ${new Date(prevDateStr).toDateString()}. Cannot assign NIGHT shift after a day shift.`);
-      this.renderRosterCalendar();
-      return;
-    }
-
-    // NEXT DATE: can't work night if they're on DAY tomorrow
-    if ((shift === 'paraNight' || shift === 'nurseNight') && (nextDayEntry.paraDay === name || nextDayEntry.nurseDay === name)) {
-      alert(`❌ ${name} is already scheduled for a DAY shift on ${new Date(nextDateStr).toDateString()}. Cannot assign NIGHT shift before a day shift.`);
-      this.renderRosterCalendar();
-      return;
-    }
-
-    // NEXT DATE: can't work day if they're on NIGHT tomorrow
-    if ((shift === 'paraDay' || shift === 'nurseDay') && (nextDayEntry.paraNight === name || nextDayEntry.nurseNight === name)) {
-      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(nextDateStr).toDateString()}. Cannot assign DAY shift before a night shift.`);
+      alert(`❌ ${name} worked a NIGHT shift on ${new Date(prevDateStr).toDateString()}. Cannot assign DAY shift the next day (need rest day after night).`);
       this.renderRosterCalendar();
       return;
     }
