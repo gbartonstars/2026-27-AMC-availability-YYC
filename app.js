@@ -293,8 +293,15 @@ loadAllData() {
       openRosterBtn.addEventListener('click', () => this.showAutoRoster());
     }
     if (generateRosterBtn) {
-      generateRosterBtn.addEventListener('click', () => this.onGenerateRoster());
+  generateRosterBtn.addEventListener('click', () => {
+    // Only Greg can generate roster
+    if (this.currentStaff !== "Greg Barton") {
+      alert("Only Greg Barton can generate the roster.\n\nScott and Graham can make manual adjustments, but roster generation is restricted to Greg only.");
+      return;
     }
+    this.onGenerateRoster();
+  });
+}
     if (rosterPrev && rosterNext) {
       rosterPrev.addEventListener('click', () => this.changeRosterMonth(-1));
       rosterNext.addEventListener('click', () => this.changeRosterMonth(1));
