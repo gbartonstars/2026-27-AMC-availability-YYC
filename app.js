@@ -1130,7 +1130,7 @@ updateRosterCell(dateStr, shift, name) {
       return;
     }
 
-    // Night then day next date
+    // NEXT date conflict: Can't work night if next day has them on day shift
     const nextDayEntry = this.generatedRoster[nextDateStr] || {};
     const nextDayShifts = [nextDayEntry.paraDay, nextDayEntry.nurseDay];
     if ((shift === 'paraNight' || shift === 'nurseNight') && nextDayShifts.includes(name)) {
@@ -1139,20 +1139,29 @@ updateRosterCell(dateStr, shift, name) {
       return;
     }
 
-    // Day then night next date
+    // NEXT date conflict: Can't work day if next night has them on night shift
     const nextNightEntry = this.generatedRoster[nextDateStr] || {};
     const nextNightShifts = [nextNightEntry.paraNight, nextNightEntry.nurseNight];
     if ((shift === 'paraDay' || shift === 'nurseDay') && nextNightShifts.includes(name)) {
-      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(nextDateStr).toDateString()}. Cannot assign DAY shift the previous day.`);
+      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(nextDateStr).toDateString()}. Cannot assign DAY shift before a night shift.`);
       this.renderRosterCalendar();
       return;
     }
 
-    // Night then day THIS date - check PREVIOUS night
+    // PREVIOUS date conflict: Can't work day if previous night has them on night shift
     const prevNightEntry = this.generatedRoster[prevDateStr] || {};
     const prevNightShifts = [prevNightEntry.paraNight, prevNightEntry.nurseNight];
     if ((shift === 'paraDay' || shift === 'nurseDay') && prevNightShifts.includes(name)) {
-      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(prevDateStr).toDateString()}. Cannot assign DAY shift the next day.`);
+      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(prevDateStr).toDateString()}. Cannot assign DAY shift after a night shift.`);
+      this.renderRosterCalendar();
+      return;
+    }
+
+    // PREVIOUS date conflict: Can't work night if previous day has them on day shift
+    const prevDayEntry = this.generatedRoster[prevDateStr] || {};
+    const prevDayShifts = [prevDayEntry.paraDay, prevDayEntry.nurseDay];
+    if ((shift === 'paraNight' || shift === 'nurseNight') && prevDayShifts.includes(name)) {
+      alert(`❌ ${name} is already scheduled for a DAY shift on ${new Date(prevDateStr).toDateString()}. Cannot assign NIGHT shift after a day shift.`);
       this.renderRosterCalendar();
       return;
     }
