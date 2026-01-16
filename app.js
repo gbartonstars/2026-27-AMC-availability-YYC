@@ -1151,9 +1151,17 @@ updateRosterCell(dateStr, shift, name) {
     // PREVIOUS date conflict: Can't work day if previous night has them on night shift
 const prevNightEntry = this.generatedRoster[prevDateStr] || {};
 const prevNightShifts = [prevNightEntry.paraNight, prevNightEntry.nurseNight];
-console.log(`DEBUG ${name} on ${dateStr}: prevNightShifts = ${prevNightShifts.join(', ')}`);
+
 if ((shift === 'paraDay' || shift === 'nurseDay') && prevNightShifts.includes(name)) {
-  alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(prevDateStr).toDateString()}. Cannot assign DAY shift after a night shift.\n\nDEBUG: prevNightShifts = ${prevNightShifts.join(', ')}`);
+  alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(prevDateStr).toDateString()}. Cannot assign DAY shift after a night shift.`);
+  this.renderRosterCalendar();
+  return;
+}
+
+// SAME DATE NIGHT conflict: Can't work day if SAME DAY has them on night shift
+const sameDayNightShifts = [sameDay.paraNight, sameDay.nurseNight];
+if ((shift === 'paraDay' || shift === 'nurseDay') && sameDayNightShifts.includes(name)) {
+  alert(`❌ ${name} is already scheduled for a NIGHT shift on ${dateStr}. Cannot assign DAY shift on the same day.`);
   this.renderRosterCalendar();
   return;
 }
