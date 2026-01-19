@@ -265,131 +265,150 @@ tradesRef.on('value', snapshot => {
 }
 
   bindEvents() {
-    document.getElementById('staffSelect')
-      .addEventListener('change', e => this.onStaffChange(e));
+  document.getElementById('staffSelect')
+    .addEventListener('change', e => this.onStaffChange(e));
 
-    document.getElementById('viewStaffSelect')
-      .addEventListener('change', e => this.onViewStaffChange(e));
+  document.getElementById('viewStaffSelect')
+    .addEventListener('change', e => this.onViewStaffChange(e));
 
-    document.getElementById('prevMonth')
-      .addEventListener('click', () => this.changeMonth(-1));
+  document.getElementById('prevMonth')
+    .addEventListener('click', () => this.changeMonth(-1));
 
-    document.getElementById('nextMonth')
-      .addEventListener('click', () => this.changeMonth(1));
+  document.getElementById('nextMonth')
+    .addEventListener('click', () => this.changeMonth(1));
 
-    const overviewToggle = document.getElementById('overviewToggle');
-    if (overviewToggle) {
-      overviewToggle.addEventListener('change', e => {
-        this.isOverviewMode = e.target.checked;
-        this.showSchedule();
-      });
-    }
-
-    const idealTab = document.getElementById('idealScheduleTab');
-    if (idealTab) {
-      idealTab.addEventListener('click', () => this.showIdealSchedule());
-    }
-
-    const idealPrev = document.getElementById('idealPrevMonth');
-    const idealNext = document.getElementById('idealNextMonth');
-    if (idealPrev && idealNext) {
-      idealPrev.addEventListener('click', () => this.changeIdealMonth(-1));
-      idealNext.addEventListener('click', () => this.changeIdealMonth(1));
-    }
-
-    const backBtn = document.getElementById('backToMainSchedule');
-    if (backBtn) {
-      backBtn.addEventListener('click', () => this.showSchedule());
-    }
-
-    // Auto roster buttons and navigation
-    const openRosterBtn = document.getElementById('openRosterView');
-    const generateRosterBtn = document.getElementById('generateRosterButton');
-    const rosterPrev = document.getElementById('rosterPrevMonth');
-    const rosterNext = document.getElementById('rosterNextMonth');
-
-    if (openRosterBtn) {
-      openRosterBtn.addEventListener('click', () => this.showAutoRoster());
-    }
-    if (generateRosterBtn) {
-  generateRosterBtn.addEventListener('click', () => {
-    // Only Greg can generate roster
-    if (this.currentStaff !== "Greg Barton") {
-      alert("Only Greg Barton can generate the roster.\n\nScott and Graham can make manual adjustments, but roster generation is restricted to Greg only.");
-      return;
-    }
-    this.onGenerateRoster();
-  });
-}
-    if (rosterPrev && rosterNext) {
-      rosterPrev.addEventListener('click', () => this.changeRosterMonth(-1));
-      rosterNext.addEventListener('click', () => this.changeRosterMonth(1));
-    }
-
-    // Export roster to CSV button
-const exportRosterBtn = document.getElementById('exportRosterBtn');
-if (exportRosterBtn) {
-  exportRosterBtn.addEventListener('click', () => {
-    if (this.currentStaff !== "Greg Barton") {
-      alert("Only Greg can export the roster.");
-      return;
-    }
-    this.exportRosterToCSV();
-  });
-}
-
-    // NEW: schedule lock buttons (Greg only)
-    const lockFirstSixBtn = document.getElementById('lockFirstSixBtn');
-    const unlockFirstSixBtn = document.getElementById('unlockFirstSixBtn');
-    const lockLastSixBtn = document.getElementById('lockLastSixBtn');
-    const unlockLastSixBtn = document.getElementById('unlockLastSixBtn');
-
-    const locksRef = firebase.database().ref("locks");
-
-    const ensureGreg = () => {
-      if (!this.currentStaff || this.currentStaff !== "Greg Barton") {
-        alert("Only Greg can change schedule locks.");
-        return false;
-      }
-      return true;
-    };
-
-    if (lockFirstSixBtn) {
-      lockFirstSixBtn.addEventListener('click', () => {
-        if (!ensureGreg()) return;
-        locksRef.update({ firstSixMonths: true });
-      });
-    }
-    if (unlockFirstSixBtn) {
-      unlockFirstSixBtn.addEventListener('click', () => {
-        if (!ensureGreg()) return;
-        locksRef.update({ firstSixMonths: false });
-      });
-    }
-    if (lockLastSixBtn) {
-      lockLastSixBtn.addEventListener('click', () => {
-        if (!ensureGreg()) return;
-        locksRef.update({ lastSixMonths: true });
-      });
-    }
-    if (unlockLastSixBtn) {
-      unlockLastSixBtn.addEventListener('click', () => {
-        if (!ensureGreg()) return;
-        locksRef.update({ lastSixMonths: false });
-      });
-    }
-
-    // Vacation summary buttons
-    const showVacMonthBtn = document.getElementById('showVacationMonth');
-    const showVacYearBtn  = document.getElementById('showVacationYear');
-
-    if (showVacMonthBtn) {
-      showVacMonthBtn.addEventListener('click', () => this.showVacationSummary('month'));
-    }
-    if (showVacYearBtn) {
-      showVacYearBtn.addEventListener('click', () => this.showVacationSummary('year'));
-    }
+  const overviewToggle = document.getElementById('overviewToggle');
+  if (overviewToggle) {
+    overviewToggle.addEventListener('change', e => {
+      this.isOverviewMode = e.target.checked;
+      this.showSchedule();
+    });
   }
+
+  const idealTab = document.getElementById('idealScheduleTab');
+  if (idealTab) {
+    idealTab.addEventListener('click', () => this.showIdealSchedule());
+  }
+
+  const idealPrev = document.getElementById('idealPrevMonth');
+  const idealNext = document.getElementById('idealNextMonth');
+  if (idealPrev && idealNext) {
+    idealPrev.addEventListener('click', () => this.changeIdealMonth(-1));
+    idealNext.addEventListener('click', () => this.changeIdealMonth(1));
+  }
+
+  const backBtn = document.getElementById('backToMainSchedule');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => this.showSchedule());
+  }
+
+  // Auto roster buttons and navigation
+  const openRosterBtn = document.getElementById('openRosterView');
+  const generateRosterBtn = document.getElementById('generateRosterButton');
+  const rosterPrev = document.getElementById('rosterPrevMonth');
+  const rosterNext = document.getElementById('rosterNextMonth');
+
+  if (openRosterBtn) {
+    openRosterBtn.addEventListener('click', () => this.showAutoRoster());
+  }
+  if (generateRosterBtn) {
+    generateRosterBtn.addEventListener('click', () => {
+      // Only Greg can generate roster
+      if (this.currentStaff !== "Greg Barton") {
+        alert("Only Greg Barton can generate the roster.\n\nScott and Graham can make manual adjustments, but roster generation is restricted to Greg only.");
+        return;
+      }
+      this.onGenerateRoster();
+    });
+  }
+  if (rosterPrev && rosterNext) {
+    rosterPrev.addEventListener('click', () => this.changeRosterMonth(-1));
+    rosterNext.addEventListener('click', () => this.changeRosterMonth(1));
+  }
+
+  // Export roster to CSV button
+  const exportRosterBtn = document.getElementById('exportRosterBtn');
+  if (exportRosterBtn) {
+    exportRosterBtn.addEventListener('click', () => {
+      if (this.currentStaff !== "Greg Barton") {
+        alert("Only Greg can export the roster.");
+        return;
+      }
+      this.exportRosterToCSV();
+    });
+  }
+
+  // NEW: schedule lock buttons (Greg only)
+  const lockFirstSixBtn = document.getElementById('lockFirstSixBtn');
+  const unlockFirstSixBtn = document.getElementById('unlockFirstSixBtn');
+  const lockLastSixBtn = document.getElementById('lockLastSixBtn');
+  const unlockLastSixBtn = document.getElementById('unlockLastSixBtn');
+
+  const locksRef = firebase.database().ref("locks");
+
+  const ensureGreg = () => {
+    if (!this.currentStaff || this.currentStaff !== "Greg Barton") {
+      alert("Only Greg can change schedule locks.");
+      return false;
+    }
+    return true;
+  };
+
+  if (lockFirstSixBtn) {
+    lockFirstSixBtn.addEventListener('click', () => {
+      if (!ensureGreg()) return;
+      locksRef.update({ firstSixMonths: true });
+    });
+  }
+  if (unlockFirstSixBtn) {
+    unlockFirstSixBtn.addEventListener('click', () => {
+      if (!ensureGreg()) return;
+      locksRef.update({ firstSixMonths: false });
+    });
+  }
+  if (lockLastSixBtn) {
+    lockLastSixBtn.addEventListener('click', () => {
+      if (!ensureGreg()) return;
+      locksRef.update({ lastSixMonths: true });
+    });
+  }
+  if (unlockLastSixBtn) {
+    unlockLastSixBtn.addEventListener('click', () => {
+      if (!ensureGreg()) return;
+      locksRef.update({ lastSixMonths: false });
+    });
+  }
+
+  // Vacation summary buttons
+  const showVacMonthBtn = document.getElementById('showVacationMonth');
+  const showVacYearBtn  = document.getElementById('showVacationYear');
+
+  if (showVacMonthBtn) {
+    showVacMonthBtn.addEventListener('click', () => this.showVacationSummary('month'));
+  }
+  if (showVacYearBtn) {
+    showVacYearBtn.addEventListener('click', () => this.showVacationSummary('year'));
+  }
+
+  // ==================== TRADE REQUEST MODAL ====================
+  const tradeModal = document.getElementById('tradeRequestModal');
+  const cancelTradeBtn = document.getElementById('cancelTradeBtn');
+  
+  if (cancelTradeBtn) {
+    cancelTradeBtn.addEventListener('click', () => {
+      tradeModal.style.display = 'none';
+    });
+  }
+
+  // Close modal when clicking outside
+  if (tradeModal) {
+    tradeModal.addEventListener('click', (e) => {
+      if (e.target === tradeModal) {
+        tradeModal.style.display = 'none';
+      }
+    });
+  }
+}
 
   async onStaffChange(e) {
     const enteredName = e.target.value;
@@ -652,7 +671,7 @@ if (exportRosterBtn) {
   }
 
   // Render the auto-generated roster calendar (read-only)
-  renderRosterCalendar() {
+ renderRosterCalendar() {
   const calendarEl = document.getElementById('rosterCalendar');
   if (!calendarEl) return;
   calendarEl.innerHTML = '';
@@ -725,188 +744,226 @@ if (exportRosterBtn) {
 
     const entry = this.generatedRoster[dateStr];
     const shiftsContainer = document.createElement('div');
-shiftsContainer.style.display = 'flex';
-shiftsContainer.style.flexDirection = 'column';
-shiftsContainer.style.gap = '2px';
-shiftsContainer.style.width = '100%';
-shiftsContainer.style.minHeight = '0';
+    shiftsContainer.style.display = 'flex';
+    shiftsContainer.style.flexDirection = 'column';
+    shiftsContainer.style.gap = '2px';
+    shiftsContainer.style.width = '100%';
+    shiftsContainer.style.minHeight = '0';
 
-  // ===== PARA DAY =====
-const pdSelect = document.createElement('select');
-pdSelect.style.width = '100%';
-pdSelect.style.padding = '2px';
-pdSelect.style.fontSize = '10px';
-pdSelect.style.fontWeight = 'bold';
-pdSelect.style.backgroundColor = '#f5f5f5';
-pdSelect.style.border = '1px solid #999';
-pdSelect.style.borderRadius = '2px';
-pdSelect.style.minWidth = '0';
-pdSelect.style.flex = '1';
-pdSelect.innerHTML = '';
+    // ===== PARA DAY =====
+    const pdSelect = document.createElement('select');
+    pdSelect.style.width = '100%';
+    pdSelect.style.padding = '2px';
+    pdSelect.style.fontSize = '10px';
+    pdSelect.style.fontWeight = 'bold';
+    pdSelect.style.backgroundColor = '#f5f5f5';
+    pdSelect.style.border = '1px solid #999';
+    pdSelect.style.borderRadius = '2px';
+    pdSelect.style.minWidth = '0';
+    pdSelect.style.flex = '1';
+    pdSelect.innerHTML = '';
 
-const pdEmptyOpt = document.createElement('option');
-pdEmptyOpt.value = '';
-pdEmptyOpt.textContent = '-- Select --';
-pdSelect.appendChild(pdEmptyOpt);
+    const pdEmptyOpt = document.createElement('option');
+    pdEmptyOpt.value = '';
+    pdEmptyOpt.textContent = '-- Select --';
+    pdSelect.appendChild(pdEmptyOpt);
 
-// Helper function to get shift indicator
-const getShiftIndicator = (name, dateStr, shiftType) => {
-  const staffDays = this.allAvailability[name] || {};
-  const entry = staffDays[dateStr];
-  
-  // Check for training first
-  if (entry && entry.Day === "T") {
-    return "T"; // Training
-  }
-  
-  // Check if available for this shift type
-  if (entry && entry[shiftType] === "A") {
-    return "✓"; // Available
-  }
-  
-  return "✗"; // Not available
-};
+    // Helper function to get shift indicator
+    const getShiftIndicator = (name, dateStr, shiftType) => {
+      const staffDays = this.allAvailability[name] || {};
+      const entry = staffDays[dateStr];
+      
+      // Check for training first
+      if (entry && entry.Day === "T") {
+        return "T"; // Training
+      }
+      
+      // Check if available for this shift type
+      if (entry && entry[shiftType] === "A") {
+        return "✓"; // Available
+      }
+      
+      return "✗"; // Not available
+    };
 
-paraNames.forEach(name => {
-  const option = document.createElement('option');
-  option.value = name;
-  const indicator = getShiftIndicator(name, dateStr, 'Day');
-  option.textContent = `${indicator} ${name}`;
-  pdSelect.appendChild(option);
-});
+    paraNames.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      const indicator = getShiftIndicator(name, dateStr, 'Day');
+      option.textContent = `${indicator} ${name}`;
+      pdSelect.appendChild(option);
+    });
 
-pdSelect.value = entry.paraDay || '';
-pdSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraDay', e.target.value));
-shiftsContainer.appendChild(pdSelect);
+    pdSelect.value = entry.paraDay || '';
+    pdSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraDay', e.target.value));
+    shiftsContainer.appendChild(pdSelect);
 
-const pdStatus = document.createElement('div');
-pdStatus.style.fontSize = '9px';
-pdStatus.style.fontWeight = 'bold';
-pdStatus.style.color = '#666';
-pdStatus.style.textAlign = 'center';
-pdStatus.style.marginTop = '1px';
-pdStatus.innerHTML = '✓=Avail | T=Training';
-shiftsContainer.appendChild(pdStatus);
+    const pdStatus = document.createElement('div');
+    pdStatus.style.fontSize = '9px';
+    pdStatus.style.fontWeight = 'bold';
+    pdStatus.style.color = '#666';
+    pdStatus.style.textAlign = 'center';
+    pdStatus.style.marginTop = '1px';
+    pdStatus.innerHTML = '✓=Avail | T=Training';
+    shiftsContainer.appendChild(pdStatus);
 
-// ===== NURSE DAY =====
-const ndSelect = document.createElement('select');
-ndSelect.style.width = '100%';
-ndSelect.style.padding = '2px';
-ndSelect.style.fontSize = '10px';
-ndSelect.style.fontWeight = 'bold';
-ndSelect.style.backgroundColor = '#f5f5f5';
-ndSelect.style.border = '1px solid #999';
-ndSelect.style.borderRadius = '2px';
-ndSelect.style.minWidth = '0';
-ndSelect.style.flex = '1';
-ndSelect.innerHTML = '';
+    // ===== NURSE DAY =====
+    const ndSelect = document.createElement('select');
+    ndSelect.style.width = '100%';
+    ndSelect.style.padding = '2px';
+    ndSelect.style.fontSize = '10px';
+    ndSelect.style.fontWeight = 'bold';
+    ndSelect.style.backgroundColor = '#f5f5f5';
+    ndSelect.style.border = '1px solid #999';
+    ndSelect.style.borderRadius = '2px';
+    ndSelect.style.minWidth = '0';
+    ndSelect.style.flex = '1';
+    ndSelect.innerHTML = '';
 
-const ndEmptyOpt = document.createElement('option');
-ndEmptyOpt.value = '';
-ndEmptyOpt.textContent = '-- Select --';
-ndSelect.appendChild(ndEmptyOpt);
+    const ndEmptyOpt = document.createElement('option');
+    ndEmptyOpt.value = '';
+    ndEmptyOpt.textContent = '-- Select --';
+    ndSelect.appendChild(ndEmptyOpt);
 
-rnNames.forEach(name => {
-  const option = document.createElement('option');
-  option.value = name;
-  const indicator = getShiftIndicator(name, dateStr, 'Day');
-  option.textContent = `${indicator} ${name}`;
-  ndSelect.appendChild(option);
-});
+    rnNames.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      const indicator = getShiftIndicator(name, dateStr, 'Day');
+      option.textContent = `${indicator} ${name}`;
+      ndSelect.appendChild(option);
+    });
 
-ndSelect.value = entry.nurseDay || '';
-ndSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseDay', e.target.value));
-shiftsContainer.appendChild(ndSelect);
+    ndSelect.value = entry.nurseDay || '';
+    ndSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseDay', e.target.value));
+    shiftsContainer.appendChild(ndSelect);
 
-const ndStatus = document.createElement('div');
-ndStatus.style.fontSize = '9px';
-ndStatus.style.fontWeight = 'bold';
-ndStatus.style.color = '#666';
-ndStatus.style.textAlign = 'center';
-ndStatus.style.marginTop = '1px';
-ndStatus.innerHTML = '✓=Avail | T=Training';
-shiftsContainer.appendChild(ndStatus);
+    const ndStatus = document.createElement('div');
+    ndStatus.style.fontSize = '9px';
+    ndStatus.style.fontWeight = 'bold';
+    ndStatus.style.color = '#666';
+    ndStatus.style.textAlign = 'center';
+    ndStatus.style.marginTop = '1px';
+    ndStatus.innerHTML = '✓=Avail | T=Training';
+    shiftsContainer.appendChild(ndStatus);
 
-// ===== PARA NIGHT =====
-const pnSelect = document.createElement('select');
-pnSelect.style.width = '100%';
-pnSelect.style.padding = '2px';
-pnSelect.style.fontSize = '10px';
-pnSelect.style.fontWeight = 'bold';
-pnSelect.style.backgroundColor = '#f5f5f5';
-pnSelect.style.border = '1px solid #999';
-pnSelect.style.borderRadius = '2px';
-pnSelect.style.minWidth = '0';
-pnSelect.style.flex = '1';
-pnSelect.innerHTML = '';
+    // ===== PARA NIGHT =====
+    const pnSelect = document.createElement('select');
+    pnSelect.style.width = '100%';
+    pnSelect.style.padding = '2px';
+    pnSelect.style.fontSize = '10px';
+    pnSelect.style.fontWeight = 'bold';
+    pnSelect.style.backgroundColor = '#f5f5f5';
+    pnSelect.style.border = '1px solid #999';
+    pnSelect.style.borderRadius = '2px';
+    pnSelect.style.minWidth = '0';
+    pnSelect.style.flex = '1';
+    pnSelect.innerHTML = '';
 
-const pnEmptyOpt = document.createElement('option');
-pnEmptyOpt.value = '';
-pnEmptyOpt.textContent = '-- Select --';
-pnSelect.appendChild(pnEmptyOpt);
+    const pnEmptyOpt = document.createElement('option');
+    pnEmptyOpt.value = '';
+    pnEmptyOpt.textContent = '-- Select --';
+    pnSelect.appendChild(pnEmptyOpt);
 
-paraNames.forEach(name => {
-  const option = document.createElement('option');
-  option.value = name;
-  const indicator = getShiftIndicator(name, dateStr, 'Night');
-  option.textContent = `${indicator} ${name}`;
-  pnSelect.appendChild(option);
-});
+    paraNames.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      const indicator = getShiftIndicator(name, dateStr, 'Night');
+      option.textContent = `${indicator} ${name}`;
+      pnSelect.appendChild(option);
+    });
 
-pnSelect.value = entry.paraNight || '';
-pnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraNight', e.target.value));
-shiftsContainer.appendChild(pnSelect);
+    pnSelect.value = entry.paraNight || '';
+    pnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'paraNight', e.target.value));
+    shiftsContainer.appendChild(pnSelect);
 
-const pnStatus = document.createElement('div');
-pnStatus.style.fontSize = '9px';
-pnStatus.style.fontWeight = 'bold';
-pnStatus.style.color = '#666';
-pnStatus.style.textAlign = 'center';
-pnStatus.style.marginTop = '1px';
-pnStatus.innerHTML = '✓=Avail | T=Training';
-shiftsContainer.appendChild(pnStatus);
+    const pnStatus = document.createElement('div');
+    pnStatus.style.fontSize = '9px';
+    pnStatus.style.fontWeight = 'bold';
+    pnStatus.style.color = '#666';
+    pnStatus.style.textAlign = 'center';
+    pnStatus.style.marginTop = '1px';
+    pnStatus.innerHTML = '✓=Avail | T=Training';
+    shiftsContainer.appendChild(pnStatus);
 
-// ===== NURSE NIGHT =====
-const nnSelect = document.createElement('select');
-nnSelect.style.width = '100%';
-nnSelect.style.padding = '2px';
-nnSelect.style.fontSize = '10px';
-nnSelect.style.fontWeight = 'bold';
-nnSelect.style.backgroundColor = '#f5f5f5';
-nnSelect.style.border = '1px solid #999';
-nnSelect.style.borderRadius = '2px';
-nnSelect.style.minWidth = '0';
-nnSelect.style.flex = '1';
-nnSelect.innerHTML = '';
+    // ===== NURSE NIGHT =====
+    const nnSelect = document.createElement('select');
+    nnSelect.style.width = '100%';
+    nnSelect.style.padding = '2px';
+    nnSelect.style.fontSize = '10px';
+    nnSelect.style.fontWeight = 'bold';
+    nnSelect.style.backgroundColor = '#f5f5f5';
+    nnSelect.style.border = '1px solid #999';
+    nnSelect.style.borderRadius = '2px';
+    nnSelect.style.minWidth = '0';
+    nnSelect.style.flex = '1';
+    nnSelect.innerHTML = '';
 
-const nnEmptyOpt = document.createElement('option');
-nnEmptyOpt.value = '';
-nnEmptyOpt.textContent = '-- Select --';
-nnSelect.appendChild(nnEmptyOpt);
+    const nnEmptyOpt = document.createElement('option');
+    nnEmptyOpt.value = '';
+    nnEmptyOpt.textContent = '-- Select --';
+    nnSelect.appendChild(nnEmptyOpt);
 
-rnNames.forEach(name => {
-  const option = document.createElement('option');
-  option.value = name;
-  const indicator = getShiftIndicator(name, dateStr, 'Night');
-  option.textContent = `${indicator} ${name}`;
-  nnSelect.appendChild(option);
-});
+    rnNames.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      const indicator = getShiftIndicator(name, dateStr, 'Night');
+      option.textContent = `${indicator} ${name}`;
+      nnSelect.appendChild(option);
+    });
 
-nnSelect.value = entry.nurseNight || '';
-nnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseNight', e.target.value));
-shiftsContainer.appendChild(nnSelect);
+    nnSelect.value = entry.nurseNight || '';
+    nnSelect.addEventListener('change', (e) => this.updateRosterCell(dateStr, 'nurseNight', e.target.value));
+    shiftsContainer.appendChild(nnSelect);
 
-const nnStatus = document.createElement('div');
-nnStatus.style.fontSize = '9px';
-nnStatus.style.fontWeight = 'bold';
-nnStatus.style.color = '#666';
-nnStatus.style.textAlign = 'center';
-nnStatus.style.marginTop = '1px';
-nnStatus.innerHTML = '✓=Avail | T=Training';
-shiftsContainer.appendChild(nnStatus);
+    const nnStatus = document.createElement('div');
+    nnStatus.style.fontSize = '9px';
+    nnStatus.style.fontWeight = 'bold';
+    nnStatus.style.color = '#666';
+    nnStatus.style.textAlign = 'center';
+    nnStatus.style.marginTop = '1px';
+    nnStatus.innerHTML = '✓=Avail | T=Training';
+    shiftsContainer.appendChild(nnStatus);
 
-// Add shifts container to day cell
-dayCell.appendChild(shiftsContainer);
+    // Add shifts container to day cell
+    dayCell.appendChild(shiftsContainer);
+
+    // ==================== TRADE BUTTONS ====================
+    const tradeButtonsContainer = document.createElement('div');
+    tradeButtonsContainer.style.display = 'flex';
+    tradeButtonsContainer.style.flexDirection = 'column';
+    tradeButtonsContainer.style.gap = '2px';
+    tradeButtonsContainer.style.marginTop = '5px';
+
+    const shiftArray = [
+      { key: 'paraDay', label: 'Para Day' },
+      { key: 'nurseDay', label: 'Nurse Day' },
+      { key: 'paraNight', label: 'Para Night' },
+      { key: 'nurseNight', label: 'Nurse Night' }
+    ];
+
+    shiftArray.forEach(shift => {
+      const assignedName = entry[shift.key];
+      if (assignedName && (this.currentStaff === assignedName || this.privilegedUsers.has(this.currentStaff))) {
+        const tradeBtn = document.createElement('button');
+        tradeBtn.textContent = `Trade ${shift.label}`;
+        tradeBtn.style.fontSize = '9px';
+        tradeBtn.style.padding = '2px 4px';
+        tradeBtn.style.backgroundColor = '#2d8a8c';
+        tradeBtn.style.color = 'white';
+        tradeBtn.style.border = 'none';
+        tradeBtn.style.borderRadius = '2px';
+        tradeBtn.style.cursor = 'pointer';
+        tradeBtn.style.fontWeight = 'bold';
+        
+        tradeBtn.addEventListener('click', () => {
+          this.openTradeModal(dateStr, shift.key, assignedName);
+        });
+        
+        tradeButtonsContainer.appendChild(tradeBtn);
+      }
+    });
+
+    dayCell.appendChild(tradeButtonsContainer);
 
     // Check for empty shifts
     const emptyShifts = [];
@@ -932,7 +989,7 @@ dayCell.appendChild(shiftsContainer);
   }
 
   this.renderRosterSummary();
-}
+} 
   
 getRosterCountsForMonth() {
   const year = this.rosterDate.getFullYear();
@@ -1383,6 +1440,169 @@ canSwapShifts(trade) {
 
   // 7) All checks passed
   return { ok: true };
+}  
+
+// ==================== TRADE UI ====================
+openTradeModal(dateStr, shiftKey, staffName) {
+  const modal = document.getElementById('tradeRequestModal');
+  const fromInfo = document.getElementById('tradeFromInfo');
+  const toStaffSelect = document.getElementById('tradeToStaffSelect');
+  const toShiftSelect = document.getElementById('tradeToShiftSelect');
+  const submitBtn = document.getElementById('submitTradeBtn');
+  const validationMsg = document.getElementById('tradeValidationMsg');
+
+  // Store current trade info
+  this.currentTrade = { dateStr, shiftKey, staffName };
+
+  // Show from info
+  fromInfo.textContent = `${staffName} - ${shiftKey} on ${new Date(dateStr).toDateString()}`;
+
+  // Populate staff select with all staff except current
+  const allStaff = [
+    'Greg Barton','Scott McTaggart','Graham Newton','Stuart Grant',
+    'Dave Allison','Mackenzie Wardle','Chad Hegge','Ken King','John Doyle',
+    'Bob Odney','Kris Austin','Kellie Ann Vogelaar','Janice Kirkham',
+    'Flo Butler','Jodi Scott','Carolyn Hogan','Michelle Sexsmith'
+  ];
+
+  toStaffSelect.innerHTML = '<option value="">-- Select Staff --</option>';
+  allStaff.forEach(name => {
+    if (name !== staffName) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      toStaffSelect.appendChild(opt);
+    }
+  });
+
+  // Clear shift select
+  toShiftSelect.innerHTML = '<option value="">-- Select Shift --</option>';
+  toShiftSelect.disabled = true;
+
+  // When staff is selected, populate their shifts for that month
+  toStaffSelect.addEventListener('change', () => {
+    this.populateTargetShifts(dateStr, toStaffSelect.value, toShiftSelect);
+  });
+
+  // Clear validation message
+  validationMsg.textContent = '';
+
+  // Remove old submit listener and add new one
+  const newSubmitBtn = submitBtn.cloneNode(true);
+  submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+  
+  newSubmitBtn.addEventListener('click', () => {
+    this.submitTradeRequest();
+  });
+
+  modal.style.display = 'flex';
+}
+
+populateTargetShifts(dateStr, toStaffName, shiftSelect) {
+  // Get all shifts for this person in the same month
+  const year = new Date(dateStr).getFullYear();
+  const month = new Date(dateStr).getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const availableShifts = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const dateStr2 = d.toISOString().split('T')[0];
+    const entry = this.generatedRoster[dateStr2];
+    if (!entry) continue;
+
+    if (entry.paraDay === toStaffName) {
+      availableShifts.push({ dateStr: dateStr2, shiftKey: 'paraDay', label: `Para Day - ${new Date(dateStr2).toDateString()}` });
+    }
+    if (entry.nurseDay === toStaffName) {
+      availableShifts.push({ dateStr: dateStr2, shiftKey: 'nurseDay', label: `Nurse Day - ${new Date(dateStr2).toDateString()}` });
+    }
+    if (entry.paraNight === toStaffName) {
+      availableShifts.push({ dateStr: dateStr2, shiftKey: 'paraNight', label: `Para Night - ${new Date(dateStr2).toDateString()}` });
+    }
+    if (entry.nurseNight === toStaffName) {
+      availableShifts.push({ dateStr: dateStr2, shiftKey: 'nurseNight', label: `Nurse Night - ${new Date(dateStr2).toDateString()}` });
+    }
+  }
+
+  shiftSelect.innerHTML = '<option value="">-- Select Shift --</option>';
+  if (availableShifts.length === 0) {
+    const opt = document.createElement('option');
+    opt.disabled = true;
+    opt.textContent = 'No shifts found for this person this month';
+    shiftSelect.appendChild(opt);
+    shiftSelect.disabled = true;
+  } else {
+    availableShifts.forEach(shift => {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify({ dateStr: shift.dateStr, shiftKey: shift.shiftKey });
+      opt.textContent = shift.label;
+      shiftSelect.appendChild(opt);
+    });
+    shiftSelect.disabled = false;
+  }
+}
+
+submitTradeRequest() {
+  const toStaffSelect = document.getElementById('tradeToStaffSelect');
+  const toShiftSelect = document.getElementById('tradeToShiftSelect');
+  const validationMsg = document.getElementById('tradeValidationMsg');
+
+  if (!toStaffSelect.value || !toShiftSelect.value) {
+    validationMsg.textContent = '❌ Please select both staff and shift.';
+    validationMsg.style.color = '#ff0000';
+    return;
+  }
+
+  const toShiftData = JSON.parse(toShiftSelect.value);
+
+  const trade = {
+    fromName: this.currentTrade.staffName,
+    fromDate: this.currentTrade.dateStr,
+    fromShift: this.currentTrade.shiftKey,
+    toName: toStaffSelect.value,
+    toDate: toShiftData.dateStr,
+    toShift: toShiftData.shiftKey
+  };
+
+  // Validate trade
+  const result = this.canSwapShifts(trade);
+  if (!result.ok) {
+    validationMsg.textContent = `❌ ${result.reason}`;
+    validationMsg.style.color = '#ff0000';
+    return;
+  }
+
+  validationMsg.textContent = '✅ Trade is valid! Creating request...';
+  validationMsg.style.color = '#008000';
+
+  // Create trade request in Firebase
+  const tradesRef = firebase.database().ref('tradeRequests');
+  const newTradeKey = tradesRef.push().key;
+
+  const tradeRequest = {
+    ...trade,
+    status: 'pending',
+    createdBy: this.currentStaff,
+    createdAt: Date.now(),
+    approvedBy: null,
+    approvedAt: null
+  };
+
+  firebase.database().ref(`tradeRequests/${newTradeKey}`).set(tradeRequest, (error) => {
+    if (error) {
+      validationMsg.textContent = `❌ Error creating request: ${error.message}`;
+      validationMsg.style.color = '#ff0000';
+    } else {
+      validationMsg.textContent = '✅ Trade request sent! Awaiting confirmation from ' + toStaffSelect.value;
+      validationMsg.style.color = '#008000';
+      
+      setTimeout(() => {
+        document.getElementById('tradeRequestModal').style.display = 'none';
+      }, 2000);
+    }
+  });
 }  
 
  // ==================== ADD NEW FUNCTION HERE ====================
