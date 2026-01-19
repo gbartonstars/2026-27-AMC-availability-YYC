@@ -174,44 +174,44 @@
       </div>
     </section>
 
-    <!-- Trade Request Modal -->
-<div id="tradeRequestModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-      <div style="background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 450px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column;">
-        <h2 style="margin-top: 0;">Request Trade</h2>
-        
-        <div style="margin: 15px 0;">
-          <label><strong>Your Shift:</strong></label>
-          <p id="tradeFromInfo" style="margin: 5px 0; padding: 10px; background: #f0f0f0; border-radius: 4px;"></p>
-        </div>
-
-        <div style="margin: 15px 0;">
-          <label><strong>Trade With (Staff Member):</strong></label>
-          <select id="tradeToStaffSelect" style="width: 100%; padding: 8px; margin-top: 5px;">
-            <option value="">-- Select Staff --</option>
-          </select>
-        </div>
-
-        <div style="margin: 15px 0;">
-          <label><strong>Their Shift:</strong></label>
-          <select id="tradeToShiftSelect" style="width: 100%; padding: 8px; margin-top: 5px;">
-            <option value="">-- Select Shift --</option>
-          </select>
-        </div>
-
-        <div style="margin: 15px 0; padding: 10px; background: #fffacd; border-radius: 4px; border-left: 4px solid #ff9900;">
-          <p id="tradeValidationMsg" style="margin: 0; font-size: 12px;"></p>
-        </div>
-
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button id="submitTradeBtn" style="flex: 1; padding: 10px; background: #2d8a8c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-            Request Trade
-          </button>
-          <button id="cancelTradeBtn" style="flex: 1; padding: 10px; background: #ccc; color: black; border: none; border-radius: 4px; cursor: pointer;">
-            Cancel
-          </button>
-        </div>
-      </div>
+   <!-- Trade Request Modal -->
+<div id="tradeRequestModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+  <div style="background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 450px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 80vh; overflow-y: auto;">
+    <h2 style="margin-top: 0; margin-bottom: 20px;">Request Trade</h2>
+    
+    <div style="margin-bottom: 15px;">
+      <label style="display: block; font-weight: bold; margin-bottom: 5px;">Your Shift:</label>
+      <p id="tradeFromInfo" style="margin: 5px 0; padding: 10px; background: #f0f0f0; border-radius: 4px;"></p>
     </div>
+
+    <div style="margin-bottom: 15px;">
+      <label style="display: block; font-weight: bold; margin-bottom: 5px;">Trade With (Staff Member):</label>
+      <select id="tradeToStaffSelect" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+        <option value="">-- Select Staff --</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <label style="display: block; font-weight: bold; margin-bottom: 5px;">Their Shift:</label>
+      <select id="tradeToShiftSelect" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+        <option value="">-- Select Shift --</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom: 15px; padding: 10px; background: #fffacd; border-radius: 4px; border-left: 4px solid #ff9900;">
+      <p id="tradeValidationMsg" style="margin: 0; font-size: 12px;"></p>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <button id="submitTradeBtn" style="flex: 1; padding: 10px; background: #2d8a8c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+        Request Trade
+      </button>
+      <button id="cancelTradeBtn" style="flex: 1; padding: 10px; background: #ccc; color: black; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
   
   <script src="app.js"></script>
 </body>
