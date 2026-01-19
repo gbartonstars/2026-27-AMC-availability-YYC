@@ -424,7 +424,7 @@ tradesRef.on('value', snapshot => {
   }
 }
 
-  async onStaffChange(e) {
+  onStaffChange(e) {
   const enteredName = e.target.value;
   if (!enteredName) {
     this.hideSchedule();
