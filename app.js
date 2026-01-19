@@ -254,11 +254,16 @@ loadAllData() {
     console.error("Error listening to Firebase roster", error);
   });
 
-  // Listen for trade requests (real-time updates)
+// Listen for trade requests (real-time updates)
 const tradesRef = firebase.database().ref('tradeRequests');
 tradesRef.on('value', snapshot => {
   this.tradeRequests = snapshot.val() || {};
-  this.renderTradeApprovalsPanel();
+  // Only render if the panel exists and staff is logged in
+  if (this.currentStaff) {
+    setTimeout(() => {
+      this.renderTradeApprovalsPanel();
+    }, 100);
+  }
 }, error => {
   console.error('Error listening to tradeRequests:', error);
 });
