@@ -270,69 +270,94 @@ tradesRef.on('value', snapshot => {
 */
 }
 
-  bindEvents() {
-  document.getElementById('staffSelect')
-    .addEventListener('change', e => this.onStaffChange(e));
+ bindEvents() {
+  console.log('✅ bindEvents called');
+  
+  // Staff selection
+  const staffSelect = document.getElementById('staffSelect');
+  if (staffSelect) {
+    staffSelect.addEventListener('change', (e) => {
+      this.onStaffChange(e);
+    });
+  }
+  
+  // View staff selection
+  const viewStaffSelect = document.getElementById('viewStaffSelect');
+  if (viewStaffSelect) {
+    viewStaffSelect.addEventListener('change', (e) => {
+      this.onViewStaffChange(e);
+    });
+  }
 
-  document.getElementById('viewStaffSelect')
-    .addEventListener('change', e => this.onViewStaffChange(e));
+  // Month navigation
+  const prevMonth = document.getElementById('prevMonth');
+  const nextMonth = document.getElementById('nextMonth');
+  if (prevMonth) {
+    prevMonth.addEventListener('click', () => this.changeMonth(-1));
+  }
+  if (nextMonth) {
+    nextMonth.addEventListener('click', () => this.changeMonth(1));
+  }
 
-  document.getElementById('prevMonth')
-    .addEventListener('click', () => this.changeMonth(-1));
-
-  document.getElementById('nextMonth')
-    .addEventListener('click', () => this.changeMonth(1));
-
+  // Overview toggle
   const overviewToggle = document.getElementById('overviewToggle');
   if (overviewToggle) {
-    overviewToggle.addEventListener('change', e => {
+    overviewToggle.addEventListener('change', (e) => {
       this.isOverviewMode = e.target.checked;
       this.showSchedule();
     });
   }
 
+  // Ideal schedule tab
   const idealTab = document.getElementById('idealScheduleTab');
   if (idealTab) {
     idealTab.addEventListener('click', () => this.showIdealSchedule());
   }
 
+  // Ideal month navigation
   const idealPrev = document.getElementById('idealPrevMonth');
   const idealNext = document.getElementById('idealNextMonth');
-  if (idealPrev && idealNext) {
+  if (idealPrev) {
     idealPrev.addEventListener('click', () => this.changeIdealMonth(-1));
+  }
+  if (idealNext) {
     idealNext.addEventListener('click', () => this.changeIdealMonth(1));
   }
 
+  // Back button
   const backBtn = document.getElementById('backToMainSchedule');
   if (backBtn) {
     backBtn.addEventListener('click', () => this.showSchedule());
   }
 
-  // Auto roster buttons and navigation
+  // Auto roster buttons
   const openRosterBtn = document.getElementById('openRosterView');
-  const generateRosterBtn = document.getElementById('generateRosterButton');
-  const rosterPrev = document.getElementById('rosterPrevMonth');
-  const rosterNext = document.getElementById('rosterNextMonth');
-
   if (openRosterBtn) {
     openRosterBtn.addEventListener('click', () => this.showAutoRoster());
   }
+
+  const generateRosterBtn = document.getElementById('generateRosterButton');
   if (generateRosterBtn) {
     generateRosterBtn.addEventListener('click', () => {
-      // Only Greg can generate roster
       if (this.currentStaff !== "Greg Barton") {
-        alert("Only Greg Barton can generate the roster.\n\nScott and Graham can make manual adjustments, but roster generation is restricted to Greg only.");
+        alert("Only Greg Barton can generate the roster.");
         return;
       }
       this.onGenerateRoster();
     });
   }
-  if (rosterPrev && rosterNext) {
+
+  // Roster month navigation
+  const rosterPrev = document.getElementById('rosterPrevMonth');
+  const rosterNext = document.getElementById('rosterNextMonth');
+  if (rosterPrev) {
     rosterPrev.addEventListener('click', () => this.changeRosterMonth(-1));
+  }
+  if (rosterNext) {
     rosterNext.addEventListener('click', () => this.changeRosterMonth(1));
   }
 
-  // Export roster to CSV button
+  // Export roster
   const exportRosterBtn = document.getElementById('exportRosterBtn');
   if (exportRosterBtn) {
     exportRosterBtn.addEventListener('click', () => {
@@ -344,51 +369,56 @@ tradesRef.on('value', snapshot => {
     });
   }
 
-  // NEW: schedule lock buttons (Greg only)
+  // Lock controls
   const lockFirstSixBtn = document.getElementById('lockFirstSixBtn');
   const unlockFirstSixBtn = document.getElementById('unlockFirstSixBtn');
   const lockLastSixBtn = document.getElementById('lockLastSixBtn');
   const unlockLastSixBtn = document.getElementById('unlockLastSixBtn');
-
-  const locksRef = firebase.database().ref("locks");
-
-  const ensureGreg = () => {
-    if (!this.currentStaff || this.currentStaff !== "Greg Barton") {
-      alert("Only Greg can change schedule locks.");
-      return false;
-    }
-    return true;
-  };
+  const locksRef = firebase.database().ref('locks');
 
   if (lockFirstSixBtn) {
     lockFirstSixBtn.addEventListener('click', () => {
-      if (!ensureGreg()) return;
+      if (this.currentStaff !== "Greg Barton") {
+        alert("Only Greg can change locks.");
+        return;
+      }
       locksRef.update({ firstSixMonths: true });
     });
   }
+
   if (unlockFirstSixBtn) {
     unlockFirstSixBtn.addEventListener('click', () => {
-      if (!ensureGreg()) return;
+      if (this.currentStaff !== "Greg Barton") {
+        alert("Only Greg can change locks.");
+        return;
+      }
       locksRef.update({ firstSixMonths: false });
     });
   }
+
   if (lockLastSixBtn) {
     lockLastSixBtn.addEventListener('click', () => {
-      if (!ensureGreg()) return;
+      if (this.currentStaff !== "Greg Barton") {
+        alert("Only Greg can change locks.");
+        return;
+      }
       locksRef.update({ lastSixMonths: true });
     });
   }
+
   if (unlockLastSixBtn) {
     unlockLastSixBtn.addEventListener('click', () => {
-      if (!ensureGreg()) return;
+      if (this.currentStaff !== "Greg Barton") {
+        alert("Only Greg can change locks.");
+        return;
+      }
       locksRef.update({ lastSixMonths: false });
     });
   }
 
-  // Vacation summary buttons
+  // Vacation summary
   const showVacMonthBtn = document.getElementById('showVacationMonth');
-  const showVacYearBtn  = document.getElementById('showVacationYear');
-
+  const showVacYearBtn = document.getElementById('showVacationYear');
   if (showVacMonthBtn) {
     showVacMonthBtn.addEventListener('click', () => this.showVacationSummary('month'));
   }
@@ -396,17 +426,15 @@ tradesRef.on('value', snapshot => {
     showVacYearBtn.addEventListener('click', () => this.showVacationSummary('year'));
   }
 
-  // ==================== TRADE REQUEST MODAL ====================
+  // Trade modal
   const tradeModal = document.getElementById('tradeRequestModal');
   const cancelTradeBtn = document.getElementById('cancelTradeBtn');
-  
   if (cancelTradeBtn) {
     cancelTradeBtn.addEventListener('click', () => {
-      tradeModal.style.display = 'none';
+      if (tradeModal) tradeModal.style.display = 'none';
     });
   }
 
-  // Close modal when clicking outside
   if (tradeModal) {
     tradeModal.addEventListener('click', (e) => {
       if (e.target === tradeModal) {
@@ -415,13 +443,14 @@ tradesRef.on('value', snapshot => {
     });
   }
 
-  // Trade refresh button
   const refreshTradesBtn = document.getElementById('refreshTradesBtn');
   if (refreshTradesBtn) {
     refreshTradesBtn.addEventListener('click', () => {
       this.renderTradeApprovalsPanel();
     });
   }
+
+  console.log('✅ All event listeners attached');
 }
 
   onStaffChange(e) {
