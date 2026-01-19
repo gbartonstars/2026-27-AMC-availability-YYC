@@ -408,6 +408,14 @@ tradesRef.on('value', snapshot => {
       }
     });
   }
+
+  // Trade refresh button
+  const refreshTradesBtn = document.getElementById('refreshTradesBtn');
+  if (refreshTradesBtn) {
+    refreshTradesBtn.addEventListener('click', () => {
+      this.renderTradeApprovalsPanel();
+    });
+  }
 }
 
   async onStaffChange(e) {
