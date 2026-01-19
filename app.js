@@ -301,12 +301,12 @@ tradesRef.on('value', snapshot => {
 
   // Overview toggle
   const overviewToggle = document.getElementById('overviewToggle');
-  if (overviewToggle) {
-    overviewToggle.addEventListener('change', (e) => {
-      this.isOverviewMode = e.target.checked;
-      this.showSchedule();
-    });
-  }
+if (overviewToggle) {
+  overviewToggle.addEventListener('change', e => {
+    this.isOverviewMode = e.target.checked;
+    this.showSchedule();
+  });
+}
 
   // Ideal schedule tab
   const idealTab = document.getElementById('idealScheduleTab');
