@@ -267,15 +267,6 @@ tradesRef.on('value', snapshot => {
 }, error => {
   console.error('Error listening to tradeRequests:', error);
 });
-
- // Listen for trade requests
-const tradesRef = firebase.database().ref('tradeRequests');
-tradesRef.on('value', snapshot => {
-  this.tradeRequests = snapshot.val() || {};
-}, error => {
-  console.error('Error listening to tradeRequests:', error);
-});
-  
 }
 
   bindEvents() {
