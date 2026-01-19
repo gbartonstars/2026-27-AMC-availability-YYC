@@ -425,78 +425,74 @@ tradesRef.on('value', snapshot => {
 }
 
   async onStaffChange(e) {
-    const enteredName = e.target.value;
-    if (!enteredName) {
-      this.hideSchedule();
-      document.getElementById('idealTabSection').style.display = 'none';
-      document.getElementById('idealScheduleSection').style.display = 'none';
-      return;
-    }
-
-    const code = prompt(`Enter login code for ${enteredName}:`);
-    if (!code || code.trim().toUpperCase() !== this.loginCodes[enteredName].toUpperCase()) {
-      alert("Incorrect code. Access denied.");
-      e.target.value = "";
-      this.hideSchedule();
-      document.getElementById('idealTabSection').style.display = 'none';
-      document.getElementById('idealScheduleSection').style.display = 'none';
-      this.currentStaff = null;
-      this.currentViewStaff = null;
-      return;
-    }
-
-    this.currentStaff = enteredName;
-
-    if (this.privilegedUsers.has(enteredName)) {
-      this.currentViewStaff = enteredName;
-      this.populateViewStaffSelector();
-      document.getElementById('viewAllSection').style.display = 'block';
-      document.getElementById('adminRosterControls').style.display = 'block';
-
-      // Lock controls only for Greg
-      if (enteredName === "Greg Barton") {
-        document.getElementById('adminLockControls').style.display = 'block';
-      } else {
-        document.getElementById('adminLockControls').style.display = 'none';
-      }
-
-      // Vacation summary visible only to Greg, Scott, Graham, Dave
-      const vacSec = document.getElementById('vacationSummarySection');
-      if (["Greg Barton","Scott McTaggart","Graham Newton","Dave Allison"].includes(enteredName)) {
-        vacSec.style.display = 'block';
-      } else {
-        vacSec.style.display = 'none';
-      }
-
-      // Trade approvals visible to admins (Greg, Scott, Graham)
-      const tradeApprovalsPanel = document.getElementById('adminTradeApprovals');
-      if (["Greg Barton", "Scott McTaggart", "Graham Newton"].includes(enteredName)) {
-        tradeApprovalsPanel.style.display = 'block';
-      } else {
-        tradeApprovalsPanel.style.display = 'none';
-      }
-    } else {
-      this.currentViewStaff = enteredName;
-      document.getElementById('viewAllSection').style.display = 'none';
-      document.getElementById('adminRosterControls').style.display = 'none';
-      document.getElementById('adminLockControls').style.display = 'none';
-      const vacSec = document.getElementById('vacationSummarySection');
-      if (vacSec) vacSec.style.display = 'none';
-
-      // Hide trade approvals for non-admins
-      const tradeApprovalsPanel = document.getElementById('adminTradeApprovals');
-      if (tradeApprovalsPanel) tradeApprovalsPanel.style.display = 'none';
-    }
-
-    if (this.idealUsers.has(enteredName)) {
-      document.getElementById('idealTabSection').style.display = 'block';
-    } else {
-      document.getElementById('idealTabSection').style.display = 'none';
-      document.getElementById('idealScheduleSection').style.display = 'none';
-    }
-
-    this.showSchedule();
+  const enteredName = e.target.value;
+  if (!enteredName) {
+    this.hideSchedule();
+    document.getElementById('idealTabSection').style.display = 'none';
+    document.getElementById('idealScheduleSection').style.display = 'none';
+    return;
   }
+
+  const code = prompt(`Enter login code for ${enteredName}:`);
+  if (!code || code.trim().toUpperCase() !== this.loginCodes[enteredName].toUpperCase()) {
+    alert("Incorrect code. Access denied.");
+    e.target.value = "";
+    this.hideSchedule();
+    document.getElementById('idealTabSection').style.display = 'none';
+    document.getElementById('idealScheduleSection').style.display = 'none';
+    this.currentStaff = null;
+    this.currentViewStaff = null;
+    return;
+  }
+
+  this.currentStaff = enteredName;
+
+  if (this.privilegedUsers.has(enteredName)) {
+    this.currentViewStaff = enteredName;
+    this.populateViewStaffSelector();
+    document.getElementById('viewAllSection').style.display = 'block';
+    document.getElementById('adminRosterControls').style.display = 'block';
+
+    if (enteredName === "Greg Barton") {
+      document.getElementById('adminLockControls').style.display = 'block';
+    } else {
+      document.getElementById('adminLockControls').style.display = 'none';
+    }
+
+    const vacSec = document.getElementById('vacationSummarySection');
+    if (["Greg Barton","Scott McTaggart","Graham Newton","Dave Allison"].includes(enteredName)) {
+      vacSec.style.display = 'block';
+    } else {
+      vacSec.style.display = 'none';
+    }
+
+    const tradeApprovalsPanel = document.getElementById('adminTradeApprovals');
+    if (["Greg Barton", "Scott McTaggart", "Graham Newton"].includes(enteredName)) {
+      tradeApprovalsPanel.style.display = 'block';
+    } else {
+      tradeApprovalsPanel.style.display = 'none';
+    }
+  } else {
+    this.currentViewStaff = enteredName;
+    document.getElementById('viewAllSection').style.display = 'none';
+    document.getElementById('adminRosterControls').style.display = 'none';
+    document.getElementById('adminLockControls').style.display = 'none';
+    const vacSec = document.getElementById('vacationSummarySection');
+    if (vacSec) vacSec.style.display = 'none';
+
+    const tradeApprovalsPanel = document.getElementById('adminTradeApprovals');
+    if (tradeApprovalsPanel) tradeApprovalsPanel.style.display = 'none';
+  }
+
+  if (this.idealUsers.has(enteredName)) {
+    document.getElementById('idealTabSection').style.display = 'block';
+  } else {
+    document.getElementById('idealTabSection').style.display = 'none';
+    document.getElementById('idealScheduleSection').style.display = 'none';
+  }
+
+  this.showSchedule();
+}
 
   populateViewStaffSelector() {
     const select = document.getElementById('viewStaffSelect');
