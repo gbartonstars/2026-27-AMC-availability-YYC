@@ -254,6 +254,15 @@ loadAllData() {
     console.error("Error listening to Firebase roster", error);
   });
 
+  // Listen for trade requests (real-time updates)
+const tradesRef = firebase.database().ref('tradeRequests');
+tradesRef.on('value', snapshot => {
+  this.tradeRequests = snapshot.val() || {};
+  this.renderTradeApprovalsPanel();
+}, error => {
+  console.error('Error listening to tradeRequests:', error);
+});
+
  // Listen for trade requests
 const tradesRef = firebase.database().ref('tradeRequests');
 tradesRef.on('value', snapshot => {
