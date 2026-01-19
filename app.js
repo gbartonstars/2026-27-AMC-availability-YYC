@@ -461,6 +461,14 @@ tradesRef.on('value', snapshot => {
       } else {
         vacSec.style.display = 'none';
       }
+
+      // Trade approvals visible to admins (Greg, Scott, Graham)
+      const tradeApprovalsPanel = document.getElementById('adminTradeApprovals');
+      if (["Greg Barton", "Scott McTaggart", "Graham Newton"].includes(enteredName)) {
+        tradeApprovalsPanel.style.display = 'block';
+      } else {
+        tradeApprovalsPanel.style.display = 'none';
+      }
     } else {
       this.currentViewStaff = enteredName;
       document.getElementById('viewAllSection').style.display = 'none';
@@ -468,6 +476,10 @@ tradesRef.on('value', snapshot => {
       document.getElementById('adminLockControls').style.display = 'none';
       const vacSec = document.getElementById('vacationSummarySection');
       if (vacSec) vacSec.style.display = 'none';
+
+      // Hide trade approvals for non-admins
+      const tradeApprovalsPanel = document.getElementById('adminTradeApprovals');
+      if (tradeApprovalsPanel) tradeApprovalsPanel.style.display = 'none';
     }
 
     if (this.idealUsers.has(enteredName)) {
