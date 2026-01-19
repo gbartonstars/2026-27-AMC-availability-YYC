@@ -93,6 +93,18 @@
   </div>
   <p id="lockStatusText" style="margin-top:8px; font-size:0.95em;"></p>
 </section>
+
+    <!-- Admin-only trade approvals panel -->
+<section class="staff-selection" id="adminTradeApprovals" style="display:none; margin-top:10px;">
+  <h3>Shift Trade Requests</h3>
+  <div style="margin: 10px 0;">
+    <button id="refreshTradesBtn">🔄 Refresh Trades</button>
+  </div>
+  <div id="tradeApprovalsPanel" style="max-height: 400px; overflow-y: auto; border: 1px solid #ccc; border-radius: 4px; padding: 10px; background: #f9f9f9;">
+    <p style="color: #666; text-align: center;">No pending trade requests</p>
+  </div>
+</section>
+    
     <!-- Main availability schedule -->
     <section id="scheduleSection" style="display:none;">
       <h2 id="scheduleTitle"></h2>
