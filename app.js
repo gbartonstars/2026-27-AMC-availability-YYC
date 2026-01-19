@@ -639,6 +639,188 @@ tradesRef.on('value', snapshot => {
     return false;
   }
 
+  }
+
+  // ==================== ADMIN TRADE APPROVALS ====================
+  renderTradeApprovalsPanel() {
+    const panel = document.getElementById('tradeApprovalsPanel');
+    if (!panel) {
+      console.warn('Trade approvals panel element not found');
+      return;
+    }
+
+    const tradesRef = firebase.database().ref('tradeRequests');
+    
+    tradesRef.once('value', snapshot => {
+      try {
+        const data = snapshot.val() || {};
+        const trades = [];
+        
+        Object.keys(data).forEach(key => {
+          const trade = data[key];
+          if (trade && (trade.status === 'pending' || trade.status === 'accepted')) {
+            trades.push({ id: key, ...trade });
+          }
+        });
+
+        if (trades.length === 0) {
+          panel.innerHTML = '<p style="color: #666; text-align: center;">No pending trade requests</p>';
+          return;
+        }
+
+        let html = '<div>';
+        trades.forEach(trade => {
+          const statusBadge = trade.status === 'pending' 
+            ? '<span style="background: #ff9900; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold;">PENDING</span>'
+            : '<span style="background: #0066cc; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold;">ACCEPTED</span>';
+
+          const createdDate = new Date(trade.createdAt).toLocaleString();
+
+          html += `
+            <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 4px; background: white;">
+              <div style="margin-bottom: 8px;">
+                <strong>${trade.fromName}</strong> (${trade.fromShift}) on ${new Date(trade.fromDate).toDateString()}
+                <span style="margin: 0 8px; font-weight: bold;">↔️</span>
+                <strong>${trade.toName}</strong> (${trade.toShift}) on ${new Date(trade.toDate).toDateString()}
+              </div>
+              <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
+                Status: ${statusBadge} | Created: ${createdDate} | By: ${trade.createdBy}
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="approveTradeBtn" data-trade-id="${trade.id}" style="padding: 6px 12px; background: #2d8a8c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">
+                  ✅ Approve
+                </button>
+                <button class="rejectTradeBtn" data-trade-id="${trade.id}" style="padding: 6px 12px; background: #cc0000; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">
+                  ❌ Reject
+                </button>
+                <button class="detailsTradeBtn" data-trade-id="${trade.id}" style="padding: 6px 12px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">
+                  ℹ️ Details
+                </button>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+
+        panel.innerHTML = html;
+
+        // Attach event listeners
+        document.querySelectorAll('.approveTradeBtn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const tradeId = btn.getAttribute('data-trade-id');
+            this.approveTradeRequest(tradeId, trades.find(t => t.id === tradeId));
+          });
+        });
+
+        document.querySelectorAll('.rejectTradeBtn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const tradeId = btn.getAttribute('data-trade-id');
+            this.rejectTradeRequest(tradeId);
+          });
+        });
+
+        document.querySelectorAll('.detailsTradeBtn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const tradeId = btn.getAttribute('data-trade-id');
+            const trade = trades.find(t => t.id === tradeId);
+            this.showTradeDetails(trade);
+          });
+        });
+      } catch (error) {
+        console.error('Error rendering trade approvals panel:', error);
+        panel.innerHTML = '<p style="color: red;">Error loading trade requests</p>';
+      }
+    }, error => {
+      console.error('Error fetching trade requests from Firebase:', error);
+      panel.innerHTML = '<p style="color: red;">Error connecting to database</p>';
+    });
+  }
+
+  approveTradeRequest(tradeId, trade) {
+    // Final validation before approval
+    const result = this.canSwapShifts({
+      fromName: trade.fromName,
+      fromDate: trade.fromDate,
+      fromShift: trade.fromShift,
+      toName: trade.toName,
+      toDate: trade.toDate,
+      toShift: trade.toShift
+    });
+
+    if (!result.ok) {
+      alert(`❌ Trade validation failed: ${result.reason}\n\nThis may have changed since the request was created.`);
+      return;
+    }
+
+    // Apply the swap to generatedRoster
+    if (!this.generatedRoster[trade.fromDate]) {
+      this.generatedRoster[trade.fromDate] = { paraDay: null, nurseDay: null, paraNight: null, nurseNight: null };
+    }
+    if (!this.generatedRoster[trade.toDate]) {
+      this.generatedRoster[trade.toDate] = { paraDay: null, nurseDay: null, paraNight: null, nurseNight: null };
+    }
+
+    const temp = this.generatedRoster[trade.fromDate][trade.fromShift];
+    this.generatedRoster[trade.fromDate][trade.fromShift] = this.generatedRoster[trade.toDate][trade.toShift];
+    this.generatedRoster[trade.toDate][trade.toShift] = temp;
+
+    // Update Firebase
+    firebase.database().ref('generatedRoster').set(this.generatedRoster);
+
+    // Mark trade as approved
+    firebase.database().ref(`tradeRequests/${tradeId}`).update({
+      status: 'adminApproved',
+      approvedBy: this.currentStaff,
+      approvedAt: Date.now()
+    });
+
+    alert('✅ Trade approved and applied to roster!');
+    this.renderRosterCalendar();
+    this.renderRosterSummary();
+    this.renderTradeApprovalsPanel();
+  }
+
+  rejectTradeRequest(tradeId) {
+    const reason = prompt('Reason for rejection (optional):');
+    
+    firebase.database().ref(`tradeRequests/${tradeId}`).update({
+      status: 'rejected',
+      rejectedBy: this.currentStaff,
+      rejectedReason: reason || 'No reason provided',
+      rejectedAt: Date.now()
+    });
+
+    alert('❌ Trade request rejected');
+    this.renderTradeApprovalsPanel();
+  }
+
+  showTradeDetails(trade) {
+    let msg = `Trade Request Details\n\n`;
+    msg += `FROM: ${trade.fromName}\n`;
+    msg += `  Shift: ${trade.fromShift}\n`;
+    msg += `  Date: ${new Date(trade.fromDate).toDateString()}\n\n`;
+    msg += `TO: ${trade.toName}\n`;
+    msg += `  Shift: ${trade.toShift}\n`;
+    msg += `  Date: ${new Date(trade.toDate).toDateString()}\n\n`;
+    msg += `Status: ${trade.status}\n`;
+    msg += `Created By: ${trade.createdBy}\n`;
+    msg += `Created At: ${new Date(trade.createdAt).toLocaleString()}\n`;
+    
+    if (trade.status === 'adminApproved') {
+      msg += `\nApproved By: ${trade.approvedBy}\n`;
+      msg += `Approved At: ${new Date(trade.approvedAt).toLocaleString()}`;
+    }
+    
+    if (trade.status === 'rejected') {
+      msg += `\nRejected By: ${trade.rejectedBy}\n`;
+      msg += `Rejected At: ${new Date(trade.rejectedAt).toLocaleString()}\n`;
+      msg += `Reason: ${trade.rejectedReason}`;
+    }
+
+    alert(msg);
+  }
+}
+
   updateIdealMonthLabel() {
     const monthName = this.monthNames[this.idealDate.getMonth()];
     const year      = this.idealDate.getFullYear();
