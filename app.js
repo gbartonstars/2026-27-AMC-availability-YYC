@@ -2,6 +2,7 @@ class StaffScheduleApp {
   constructor() {
     // GitHub Sync Configuration
     
+    
     this.currentStaff = null;
     this.currentViewStaff = null;
     this.isOverviewMode = false;
