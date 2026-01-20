@@ -2,7 +2,6 @@ class StaffScheduleApp {
   constructor() {
     // GitHub Sync Configuration
     
-    
     this.currentStaff = null;
     this.currentViewStaff = null;
     this.isOverviewMode = false;
@@ -1107,7 +1106,7 @@ updateRosterCell(dateStr, shift, name) {
     }
   }
 
-  // Check for day/night conflict (person can't work day and night same date, or night then day next date, or day then night next date)
+  // Check for day/night conflict
   if (name) {
     const date = new Date(dateStr);
     const prevDate = new Date(date.getTime() - 24 * 60 * 60 * 1000);
@@ -1115,54 +1114,27 @@ updateRosterCell(dateStr, shift, name) {
     const prevDateStr = prevDate.toISOString().split('T')[0];
     const nextDateStr = nextDate.toISOString().split('T')[0];
 
-    // Same date: can't do both day and night
+    // Get shifts for all three dates
     const sameDay = this.generatedRoster[dateStr] || {};
-    const dayShifts = [sameDay.paraDay, sameDay.nurseDay];
-    const nightShifts = [sameDay.paraNight, sameDay.nurseNight];
-    
-    if ((shift === 'paraDay' || shift === 'nurseDay') && nightShifts.includes(name)) {
-      alert(`❌ ${name} is already scheduled for a NIGHT shift on this date. Cannot assign DAY shift.`);
-      this.renderRosterCalendar();
-      return;
-    }
-    if ((shift === 'paraNight' || shift === 'nurseNight') && dayShifts.includes(name)) {
-      alert(`❌ ${name} is already scheduled for a DAY shift on this date. Cannot assign NIGHT shift.`);
-      this.renderRosterCalendar();
-      return;
-    }
-
-    // NEXT date conflict: Can't work night if next day has them on day shift
-    const nextDayEntry = this.generatedRoster[nextDateStr] || {};
-    const nextDayShifts = [nextDayEntry.paraDay, nextDayEntry.nurseDay];
-    if ((shift === 'paraNight' || shift === 'nurseNight') && nextDayShifts.includes(name)) {
-      alert(`❌ ${name} is already scheduled for a DAY shift on ${new Date(nextDateStr).toDateString()}. Cannot assign NIGHT shift the previous day.`);
-      this.renderRosterCalendar();
-      return;
-    }
-
-    // NEXT date conflict: Can't work day if next night has them on night shift
-    const nextNightEntry = this.generatedRoster[nextDateStr] || {};
-    const nextNightShifts = [nextNightEntry.paraNight, nextNightEntry.nurseNight];
-    if ((shift === 'paraDay' || shift === 'nurseDay') && nextNightShifts.includes(name)) {
-      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(nextDateStr).toDateString()}. Cannot assign DAY shift before a night shift.`);
-      this.renderRosterCalendar();
-      return;
-    }
-
-    // PREVIOUS date conflict: Can't work day if previous night has them on night shift
-    const prevNightEntry = this.generatedRoster[prevDateStr] || {};
-    const prevNightShifts = [prevNightEntry.paraNight, prevNightEntry.nurseNight];
-    if ((shift === 'paraDay' || shift === 'nurseDay') && prevNightShifts.includes(name)) {
-      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(prevDateStr).toDateString()}. Cannot assign DAY shift after a night shift.`);
-      this.renderRosterCalendar();
-      return;
-    }
-
-    // PREVIOUS date conflict: Can't work night if previous day has them on day shift
     const prevDayEntry = this.generatedRoster[prevDateStr] || {};
-    const prevDayShifts = [prevDayEntry.paraDay, prevDayEntry.nurseDay];
-    if ((shift === 'paraNight' || shift === 'nurseNight') && prevDayShifts.includes(name)) {
-      alert(`❌ ${name} is already scheduled for a DAY shift on ${new Date(prevDateStr).toDateString()}. Cannot assign NIGHT shift after a day shift.`);
+    const nextDayEntry = this.generatedRoster[nextDateStr] || {};
+
+    // Rule 1: SAME DATE - can't do both day and night on same date
+    if ((shift === 'paraDay' || shift === 'nurseDay') && (sameDay.paraNight === name || sameDay.nurseNight === name)) {
+      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${dateStr}. Cannot work both DAY and NIGHT on the same date.`);
+      this.renderRosterCalendar();
+      return;
+    }
+    
+    if ((shift === 'paraNight' || shift === 'nurseNight') && (sameDay.paraDay === name || sameDay.nurseDay === name)) {
+      alert(`❌ ${name} is already scheduled for a DAY shift on ${dateStr}. Cannot work both NIGHT and DAY on the same date.`);
+      this.renderRosterCalendar();
+      return;
+    }
+
+    // Rule 2: PREVIOUS NIGHT → TODAY DAY not allowed (need rest after night)
+    if ((shift === 'paraDay' || shift === 'nurseDay') && (prevDayEntry.paraNight === name || prevDayEntry.nurseNight === name)) {
+      alert(`❌ ${name} worked a NIGHT shift on ${new Date(prevDateStr).toDateString()}. Cannot assign DAY shift the next day (need rest day after night).`);
       this.renderRosterCalendar();
       return;
     }
@@ -1224,6 +1196,38 @@ updateRosterCell(dateStr, shift, name) {
   firebase.database().ref('generatedRoster').set(this.generatedRoster);
   this.renderRosterCalendar();
   this.renderRosterSummary();
+}
+
+ // ==================== ADD NEW FUNCTION HERE ====================
+cleanupRosterDate(dateStr) {
+  console.log(`🧹 Cleaning up ${dateStr}...`);
+  
+  firebase.database().ref(`generatedRoster/${dateStr}`).once('value', snapshot => {
+    const dayData = snapshot.val() || {};
+    
+    // Remove any null or undefined values
+    const cleaned = {
+      paraDay: dayData.paraDay || null,
+      paraNight: dayData.paraNight || null,
+      nurseDay: dayData.nurseDay || null,
+      nurseNight: dayData.nurseNight || null
+    };
+    
+    firebase.database().ref(`generatedRoster/${dateStr}`).set(cleaned);
+    console.log(`✓ ${dateStr} cleaned:`, cleaned);
+  });
+}
+// ==================== END NEW FUNCTION ==================== 
+
+  // ==================== DEBUG: Force Firebase Refresh ====================
+debugRefreshRosterData() {
+  console.log('🔄 FORCE REFRESHING ROSTER DATA FROM FIREBASE...');
+  firebase.database().ref('generatedRoster').once('value', snapshot => {
+    this.generatedRoster = snapshot.val() || {};
+    console.log('✓ Roster data refreshed:', this.generatedRoster);
+    this.renderRosterCalendar();
+    this.renderRosterSummary();
+  });
 }
   
   renderCalendar() {
