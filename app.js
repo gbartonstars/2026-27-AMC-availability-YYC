@@ -1,12 +1,3 @@
-// ==================== TRADE SYSTEM HELPER ====================
-// Check if two dates are in the same month/year
-function inSameMonth(dateStr1, dateStr2) {
-  const d1 = new Date(dateStr1);
-  const d2 = new Date(dateStr2);
-  return d1.getFullYear() === d2.getFullYear() &&
-         d1.getMonth() === d2.getMonth();
-}
-
 class StaffScheduleApp {
   constructor() {
     // GitHub Sync Configuration
@@ -124,7 +115,6 @@ class StaffScheduleApp {
 
     // Roster / lock support
     this.generatedRoster = {};
-    this.tradeRequests = {};
     this.rosterDate = new Date(this.dateRangeStart.getTime());
     this.lockFirstSix = false;
     this.lockLastSix = false;
@@ -253,15 +243,6 @@ loadAllData() {
   }, error => {
     console.error("Error listening to Firebase roster", error);
   });
-
- // Listen for trade requests
-const tradesRef = firebase.database().ref('tradeRequests');
-tradesRef.on('value', snapshot => {
-  this.tradeRequests = snapshot.val() || {};
-}, error => {
-  console.error('Error listening to tradeRequests:', error);
-});
-  
 }
 
   bindEvents() {
@@ -1125,7 +1106,7 @@ updateRosterCell(dateStr, shift, name) {
     }
   }
 
-  // Check for day/night conflict
+  // Check for day/night conflict (person can't work day and night same date, or night then day next date, or day then night next date)
   if (name) {
     const date = new Date(dateStr);
     const prevDate = new Date(date.getTime() - 24 * 60 * 60 * 1000);
@@ -1133,27 +1114,54 @@ updateRosterCell(dateStr, shift, name) {
     const prevDateStr = prevDate.toISOString().split('T')[0];
     const nextDateStr = nextDate.toISOString().split('T')[0];
 
-    // Get shifts for all three dates
+    // Same date: can't do both day and night
     const sameDay = this.generatedRoster[dateStr] || {};
-    const prevDayEntry = this.generatedRoster[prevDateStr] || {};
-    const nextDayEntry = this.generatedRoster[nextDateStr] || {};
-
-    // Rule 1: SAME DATE - can't do both day and night on same date
-    if ((shift === 'paraDay' || shift === 'nurseDay') && (sameDay.paraNight === name || sameDay.nurseNight === name)) {
-      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${dateStr}. Cannot work both DAY and NIGHT on the same date.`);
-      this.renderRosterCalendar();
-      return;
-    }
+    const dayShifts = [sameDay.paraDay, sameDay.nurseDay];
+    const nightShifts = [sameDay.paraNight, sameDay.nurseNight];
     
-    if ((shift === 'paraNight' || shift === 'nurseNight') && (sameDay.paraDay === name || sameDay.nurseDay === name)) {
-      alert(`❌ ${name} is already scheduled for a DAY shift on ${dateStr}. Cannot work both NIGHT and DAY on the same date.`);
+    if ((shift === 'paraDay' || shift === 'nurseDay') && nightShifts.includes(name)) {
+      alert(`❌ ${name} is already scheduled for a NIGHT shift on this date. Cannot assign DAY shift.`);
+      this.renderRosterCalendar();
+      return;
+    }
+    if ((shift === 'paraNight' || shift === 'nurseNight') && dayShifts.includes(name)) {
+      alert(`❌ ${name} is already scheduled for a DAY shift on this date. Cannot assign NIGHT shift.`);
       this.renderRosterCalendar();
       return;
     }
 
-    // Rule 2: PREVIOUS NIGHT → TODAY DAY not allowed (need rest after night)
-    if ((shift === 'paraDay' || shift === 'nurseDay') && (prevDayEntry.paraNight === name || prevDayEntry.nurseNight === name)) {
-      alert(`❌ ${name} worked a NIGHT shift on ${new Date(prevDateStr).toDateString()}. Cannot assign DAY shift the next day (need rest day after night).`);
+    // NEXT date conflict: Can't work night if next day has them on day shift
+    const nextDayEntry = this.generatedRoster[nextDateStr] || {};
+    const nextDayShifts = [nextDayEntry.paraDay, nextDayEntry.nurseDay];
+    if ((shift === 'paraNight' || shift === 'nurseNight') && nextDayShifts.includes(name)) {
+      alert(`❌ ${name} is already scheduled for a DAY shift on ${new Date(nextDateStr).toDateString()}. Cannot assign NIGHT shift the previous day.`);
+      this.renderRosterCalendar();
+      return;
+    }
+
+    // NEXT date conflict: Can't work day if next night has them on night shift
+    const nextNightEntry = this.generatedRoster[nextDateStr] || {};
+    const nextNightShifts = [nextNightEntry.paraNight, nextNightEntry.nurseNight];
+    if ((shift === 'paraDay' || shift === 'nurseDay') && nextNightShifts.includes(name)) {
+      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(nextDateStr).toDateString()}. Cannot assign DAY shift before a night shift.`);
+      this.renderRosterCalendar();
+      return;
+    }
+
+    // PREVIOUS date conflict: Can't work day if previous night has them on night shift
+    const prevNightEntry = this.generatedRoster[prevDateStr] || {};
+    const prevNightShifts = [prevNightEntry.paraNight, prevNightEntry.nurseNight];
+    if ((shift === 'paraDay' || shift === 'nurseDay') && prevNightShifts.includes(name)) {
+      alert(`❌ ${name} is already scheduled for a NIGHT shift on ${new Date(prevDateStr).toDateString()}. Cannot assign DAY shift after a night shift.`);
+      this.renderRosterCalendar();
+      return;
+    }
+
+    // PREVIOUS date conflict: Can't work night if previous day has them on day shift
+    const prevDayEntry = this.generatedRoster[prevDateStr] || {};
+    const prevDayShifts = [prevDayEntry.paraDay, prevDayEntry.nurseDay];
+    if ((shift === 'paraNight' || shift === 'nurseNight') && prevDayShifts.includes(name)) {
+      alert(`❌ ${name} is already scheduled for a DAY shift on ${new Date(prevDateStr).toDateString()}. Cannot assign NIGHT shift after a day shift.`);
       this.renderRosterCalendar();
       return;
     }
@@ -1215,206 +1223,6 @@ updateRosterCell(dateStr, shift, name) {
   firebase.database().ref('generatedRoster').set(this.generatedRoster);
   this.renderRosterCalendar();
   this.renderRosterSummary();
-}
-
-// ==================== TRADE SYSTEM ====================
-/**
- * Check if two shifts can be swapped without breaking rules.
- * trade = {
- *   fromName, fromDate, fromShift,
- *   toName,   toDate,   toShift
- * }
- */
-canSwapShifts(trade) {
-  const {
-    fromName, fromDate, fromShift,
-    toName,   toDate,   toShift
-  } = trade;
-
-  // 1) Same-month rule
-  if (!inSameMonth(fromDate, toDate)) {
-    return { ok: false, reason: 'Trades must be within the same month.' };
-  }
-
-  // 2) Make a deep copy of the current roster for simulation
-  const simulatedRoster = JSON.parse(JSON.stringify(this.generatedRoster || {}));
-
-  // Ensure date entries exist
-  if (!simulatedRoster[fromDate]) {
-    simulatedRoster[fromDate] = { paraDay: null, nurseDay: null, paraNight: null, nurseNight: null };
-  }
-  if (!simulatedRoster[toDate]) {
-    simulatedRoster[toDate] = { paraDay: null, nurseDay: null, paraNight: null, nurseNight: null };
-  }
-
-  const fromEntry = simulatedRoster[fromDate];
-  const toEntry   = simulatedRoster[toDate];
-
-  // 3) Verify the current assignments match what we think they are
-  if (fromEntry[fromShift] !== fromName) {
-    return { ok: false, reason: `Expected ${fromName} on ${fromDate} ${fromShift}, but roster shows ${fromEntry[fromShift] || 'nothing'}.` };
-  }
-  if (toEntry[toShift] !== toName) {
-    return { ok: false, reason: `Expected ${toName} on ${toDate} ${toShift}, but roster shows ${toEntry[toShift] || 'nothing'}.` };
-  }
-
-  // 4) Simulate the swap
-  fromEntry[fromShift] = toName;
-  toEntry[toShift]     = fromName;
-
-  // 5) Day/night conflict rules for both people on all affected dates
-  const violatesShiftRules = (name, dateStr, shift, roster) => {
-    if (!name) return false;
-
-    const date = new Date(dateStr);
-    const prevDate = new Date(date.getTime() - 24 * 60 * 60 * 1000);
-    const prevDateStr = prevDate.toISOString().split('T')[0];
-
-    const sameDay = roster[dateStr] || {};
-    const prevDay = roster[prevDateStr] || {};
-
-    const isDayShift   = (shift === 'paraDay'   || shift === 'nurseDay');
-    const isNightShift = (shift === 'paraNight' || shift === 'nurseNight');
-
-    // Same-date rules
-    if (isDayShift && (sameDay.paraNight === name || sameDay.nurseNight === name)) {
-      return `Same-day conflict: ${name} already on NIGHT ${dateStr}.`;
-    }
-    if (isNightShift && (sameDay.paraDay === name || sameDay.nurseDay === name)) {
-      return `Same-day conflict: ${name} already on DAY ${dateStr}.`;
-    }
-
-    // Previous-night -> today-day not allowed
-    if (isDayShift && (prevDay.paraNight === name || prevDay.nurseNight === name)) {
-      return `Rest rule: ${name} worked NIGHT on ${new Date(prevDateStr).toDateString()} and cannot work DAY the next day.`;
-    }
-
-    return null;
-  };
-
-  // Check both people on both dates
-  const toCheck = [
-    { name: fromName, date: fromDate, shift: fromShift },
-    { name: fromName, date: toDate,   shift: toShift   },
-    { name: toName,   date: fromDate, shift: fromShift },
-    { name: toName,   date: toDate,   shift: toShift   }
-  ];
-
-  for (const item of toCheck) {
-    const msg = violatesShiftRules(item.name, item.date, item.shift, simulatedRoster);
-    if (msg) {
-      return { ok: false, reason: msg };
-    }
-  }
-
-  // 6) Shift-cap checks for both staff in that month
-  const anyDate = fromDate; // same month already enforced
-  const year  = new Date(anyDate).getFullYear();
-  const month = new Date(anyDate).getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  // Helper: recompute counts for the month from simulatedRoster
-  const getCountsForMonthSimulated = () => {
-    const counts = {};
-    const allStaff = [
-      'Greg Barton','Scott McTaggart','Graham Newton','Stuart Grant',
-      'Dave Allison','Mackenzie Wardle','Chad Hegge','Ken King','John Doyle',
-      'Bob Odney','Kris Austin','Kellie Ann Vogelaar','Janice Kirkham',
-      'Flo Butler','Jodi Scott','Carolyn Hogan','Michelle Sexsmith'
-    ];
-
-    allStaff.forEach(name => {
-      counts[name] = { total: 0, day: 0, night: 0, weekend: 0 };
-    });
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const d = new Date(year, month, day);
-      const dateStr = d.toISOString().split('T')[0];
-      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-      const r = simulatedRoster[dateStr];
-      if (!r) continue;
-
-      const apply = (staffName, isDayShift, isNightShift) => {
-        if (!staffName || !counts[staffName]) return;
-        counts[staffName].total++;
-        if (isDayShift)   counts[staffName].day++;
-        if (isNightShift) counts[staffName].night++;
-        if (isWeekend)    counts[staffName].weekend++;
-      };
-
-      apply(r.paraDay,   true,  false);
-      apply(r.nurseDay,  true,  false);
-      apply(r.paraNight, false, true);
-      apply(r.nurseNight,false, true);
-    }
-
-    return counts;
-  };
-
-  const counts = getCountsForMonthSimulated();
-  const daysInMonthOrig = daysInMonth;
-  const minimumTable = (daysInMonthOrig === 31) ? this.minimumRequired31 : this.minimumRequired30;
-
-  const noVacationReduction = ['Dave Allison', 'Chad Hegge', 'Bob Odney', 'Kellie Ann Vogelaar'];
-
-  const checkCapsFor = (name) => {
-    const target = minimumTable[name] || 0;
-    const vacation = this.getVacationCountForMonth(name, year, month);
-    const adjustedTarget = noVacationReduction.includes(name)
-      ? target
-      : Math.max(0, target - vacation);
-
-    const currentShifts = counts[name]?.total || 0;
-    if (currentShifts > adjustedTarget) {
-      return `${name} would exceed their target (${adjustedTarget}) with ${currentShifts} shifts after this trade.`;
-    }
-    return null;
-  };
-
-  const capIssueFrom = checkCapsFor(fromName);
-  if (capIssueFrom) {
-    return { ok: false, reason: capIssueFrom };
-  }
-
-  const capIssueTo = checkCapsFor(toName);
-  if (capIssueTo) {
-    return { ok: false, reason: capIssueTo };
-  }
-
-  // 7) All checks passed
-  return { ok: true };
-}  
-
- // ==================== ADD NEW FUNCTION HERE ====================
-cleanupRosterDate(dateStr) {
-  console.log(`🧹 Cleaning up ${dateStr}...`);
-  
-  firebase.database().ref(`generatedRoster/${dateStr}`).once('value', snapshot => {
-    const dayData = snapshot.val() || {};
-    
-    // Remove any null or undefined values
-    const cleaned = {
-      paraDay: dayData.paraDay || null,
-      paraNight: dayData.paraNight || null,
-      nurseDay: dayData.nurseDay || null,
-      nurseNight: dayData.nurseNight || null
-    };
-    
-    firebase.database().ref(`generatedRoster/${dateStr}`).set(cleaned);
-    console.log(`✓ ${dateStr} cleaned:`, cleaned);
-  });
-}
-// ==================== END NEW FUNCTION ==================== 
-
-  // ==================== DEBUG: Force Firebase Refresh ====================
-debugRefreshRosterData() {
-  console.log('🔄 FORCE REFRESHING ROSTER DATA FROM FIREBASE...');
-  firebase.database().ref('generatedRoster').once('value', snapshot => {
-    this.generatedRoster = snapshot.val() || {};
-    console.log('✓ Roster data refreshed:', this.generatedRoster);
-    this.renderRosterCalendar();
-    this.renderRosterSummary();
-  });
 }
   
   renderCalendar() {
