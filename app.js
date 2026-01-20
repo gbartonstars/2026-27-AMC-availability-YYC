@@ -845,7 +845,6 @@ if (overviewToggle) {
 
     alert(msg);
   }
-}
 
   updateIdealMonthLabel() {
     const monthName = this.monthNames[this.idealDate.getMonth()];
